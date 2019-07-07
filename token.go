@@ -28,6 +28,14 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 
 	for i := 0; i < len(entire); i++ {
 		switch entire[i] {
+		case '#':
+			tokens = appendEndline(tokens)
+			for ; i < len(entire); i++ {
+				if entire[i] == '\n' {
+					break
+				}
+			}
+
 		case '\n':
 			tokens = appendWord(tokens, &word)
 			tokens = appendEndline(tokens)

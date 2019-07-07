@@ -1,5 +1,12 @@
 # 🍱 bento
 
+   * [Example Use Case](#example-use-case)
+   * [Language](#language)
+      * [Sentences](#sentences)
+      * [Comments](#comments)
+   * [Examples](#examples)
+      * [Hello, World!](#hello-world)
+
 bento is a
 [forth-generation programming language](https://en.wikipedia.org/wiki/Fourth-generation_programming_language)
 that is English-based. It is designed to separate orchestration from
@@ -76,6 +83,28 @@ Did you mean this instead?
 
 Hopefully, they will be able to adjust the script accordingly and resolve it
 immediately. Hooray!
+
+# Language
+
+## Sentences
+
+A sentence contains a collection of words and values and it is terminated by a
+new line. For example:
+
+```
+display "Hello"
+```
+
+## Comments
+
+Comments start with a `#` and continue until a new line or the end of the
+program is reached. The comment may be on its own line or at the end of a
+sentence.
+
+```
+# A comment looks like this.
+display "Hello" # It can also be here
+```
 
 # Examples
 
