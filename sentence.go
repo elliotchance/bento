@@ -1,13 +1,12 @@
 package main
 
-type SentenceHandler func([]interface{})
+type SentenceHandler func(*Program, []interface{})
 
 type Sentence struct {
-	Syntax  string
 	Handler SentenceHandler
 	Args    []interface{}
 }
 
-func (sentence *Sentence) Run() {
-	sentence.Handler(sentence.Args)
+func (sentence *Sentence) Run(program *Program) {
+	sentence.Handler(program, sentence.Args)
 }

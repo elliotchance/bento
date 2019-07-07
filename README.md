@@ -4,6 +4,7 @@
    * [Language](#language)
       * [Sentences](#sentences)
       * [Comments](#comments)
+      * [Variables](#variables)
    * [Examples](#examples)
       * [Hello, World!](#hello-world)
 
@@ -104,6 +105,22 @@ sentence.
 ```
 # A comment looks like this.
 display "Hello" # It can also be here
+```
+
+## Variables
+
+Variables can be declared with the `declare` keyword:
+
+```
+declare my-var as text
+```
+
+At the moment, only `text` type is supported.
+
+The default value will be empty, you can set the value with:
+
+```
+set my-var to "hello"
 ```
 
 # Examples
