@@ -13,7 +13,7 @@ func TestTokenize(t *testing.T) {
 		expected []Token
 	}{
 		"Empty": {
-			bento: "",
+			bento:    "",
 			expected: nil,
 		},
 		"Word": {
@@ -99,7 +99,27 @@ func TestTokenize(t *testing.T) {
 				{TokenKindEndline, ""},
 			},
 		},
-	}{
+		"Comment1": {
+			bento:    "# comment",
+			expected: nil,
+		},
+		"Comment2": {
+			bento: "# comment\ndisplay",
+			expected: []Token{
+				{TokenKindWord, "display"},
+				{TokenKindEndline, ""},
+			},
+		},
+		"Comment3": {
+			bento: "display #comment\ndisplay",
+			expected: []Token{
+				{TokenKindWord, "display"},
+				{TokenKindEndline, ""},
+				{TokenKindWord, "display"},
+				{TokenKindEndline, ""},
+			},
+		},
+	} {
 		t.Run(testName, func(t *testing.T) {
 			actual, err := Tokenize(strings.NewReader(test.bento))
 			require.NoError(t, err)
