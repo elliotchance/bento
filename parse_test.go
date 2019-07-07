@@ -15,12 +15,15 @@ func TestParse(t *testing.T) {
 		expected *Program
 	}{
 		"Empty": {
-			bento:    "",
-			expected: &Program{},
+			bento: "",
+			expected: &Program{
+				Variables: map[string]*Variable{},
+			},
 		},
 		"Display": {
 			bento: `Display "Hello, World!"`,
 			expected: &Program{
+				Variables: map[string]*Variable{},
 				Sentences: []*Sentence{
 					System.SentenceForSyntax("display ?", []interface{}{
 						"Hello, World!",
@@ -31,12 +34,40 @@ func TestParse(t *testing.T) {
 		"DisplayTwice": {
 			bento: "Display \"hello\"\ndisplay \"twice!\"",
 			expected: &Program{
+				Variables: map[string]*Variable{},
 				Sentences: []*Sentence{
 					System.SentenceForSyntax("display ?", []interface{}{
 						"hello",
 					}),
 					System.SentenceForSyntax("display ?", []interface{}{
 						"twice!",
+					}),
+				},
+			},
+		},
+		"Declare1": {
+			bento: "declare some-variable is text",
+			expected: &Program{
+				Variables: map[string]*Variable{
+					"some-variable": {
+						Type:  "text",
+						Value: "",
+					},
+				},
+			},
+		},
+		"Declare2": {
+			bento: "declare foo is text\ndisplay foo",
+			expected: &Program{
+				Variables: map[string]*Variable{
+					"foo": {
+						Type:  "text",
+						Value: "",
+					},
+				},
+				Sentences: []*Sentence{
+					System.SentenceForSyntax("display ?", []interface{}{
+						VariableReference("foo"),
 					}),
 				},
 			},

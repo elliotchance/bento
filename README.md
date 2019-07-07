@@ -4,8 +4,10 @@
    * [Language](#language)
       * [Sentences](#sentences)
       * [Comments](#comments)
+      * [Variables](#variables)
    * [Examples](#examples)
       * [Hello, World!](#hello-world)
+      * [Variables](#variables-1)
 
 bento is a
 [forth-generation programming language](https://en.wikipedia.org/wiki/Fourth-generation_programming_language)
@@ -106,10 +108,34 @@ sentence.
 display "Hello" # It can also be here
 ```
 
+## Variables
+
+Variables can be declared with the `declare` keyword:
+
+```
+declare my-var as text
+```
+
+At the moment, only `text` type is supported.
+
+The default value will be empty, you can set the value with:
+
+```
+set my-var to "hello"
+```
+
 # Examples
 
 ## Hello, World!
 
 ```
 display "Hello, World!"
+```
+
+## Variables
+
+```
+declare first-name as text
+set first-name to "Bob"
+display first-name
 ```

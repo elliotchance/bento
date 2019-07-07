@@ -1,0 +1,7 @@
+declare first-var as text
+declare second-var as text
+
+set first-var to "hello"
+
+display first-var
+display second-var
