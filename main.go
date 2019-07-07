@@ -15,7 +15,8 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		program, err := Parse(file)
+		parser := NewParser(file)
+		program, err := parser.Parse()
 		if err != nil {
 			log.Fatalln(err)
 		}

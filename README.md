@@ -138,6 +138,23 @@ print everything:
 The whitespace is not required. However, it is easier to read when content of
 functions are indented with spaces or tabs.
 
+Variables can be declared in the function name by specifying their names and
+types in `()`, for example:
+
+```
+say greeting to persons-name (greeting is text, persons-name is text):
+	display greeting
+	display persons-name
+```
+
+Can be called with:
+
+```
+say "Hi" to "Bob"
+```
+
+The order in which the variables are defined is not important.
+
 # Examples
 
 ## Hello, World!

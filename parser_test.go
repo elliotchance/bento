@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestParse(t *testing.T) {
+func TestParser_Parse(t *testing.T) {
 	for testName, test := range map[string]struct {
 		bento    string
 		expected *Program
@@ -132,9 +132,70 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		"FunctionWithArgument": {
+			bento: "greet persons-name now (persons-name is text):",
+			expected: &Program{
+				Variables: map[string]*Variable{},
+				Functions: map[string]*Function{
+					"greet ? now": {
+						Variables: map[string]*Variable{
+							"persons-name": {
+								Type: "text",
+							},
+						},
+					},
+					"start": {},
+				},
+			},
+		},
+		"CallWithArgument": {
+			bento: "greet persons-name now (persons-name is text):\ndisplay persons-name",
+			expected: &Program{
+				Variables: map[string]*Variable{},
+				Functions: map[string]*Function{
+					"greet ? now": {
+						Variables: map[string]*Variable{
+							"persons-name": {
+								Type: "text",
+							},
+						},
+						Sentences: []*Sentence{
+							{
+								Args: []interface{}{
+									VariableReference("persons-name"),
+								},
+							},
+						},
+					},
+					"start": {},
+				},
+			},
+		},
+		"FunctionWithArguments": {
+			bento: "say greeting to persons-name (persons-name is text, greeting is text):",
+			expected: &Program{
+				Variables: map[string]*Variable{},
+				Functions: map[string]*Function{
+					"say ? to ?": {
+						Variables: map[string]*Variable{
+							"greeting": {
+								Type:     "text",
+								Position: 0,
+							},
+							"persons-name": {
+								Type:     "text",
+								Position: 1,
+							},
+						},
+					},
+					"start": {},
+				},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
-			actual, err := Parse(strings.NewReader(test.bento))
+			parser := NewParser(strings.NewReader(test.bento))
+			actual, err := parser.Parse()
 			require.NoError(t, err)
 
 			diff := cmp.Diff(test.expected, actual,

@@ -7,6 +7,7 @@ const (
 type VariableReference string
 
 type Variable struct {
-	Type  string
-	Value interface{}
+	Type     string
+	Value    interface{}
+	Position int
 }
