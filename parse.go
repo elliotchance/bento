@@ -18,14 +18,32 @@ func Parse(r io.Reader) (*Program, error) {
 
 	program := &Program{
 		Variables: map[string]*Variable{},
+		Functions: map[string]*Function{},
 	}
+
+	// We have to parse the whole file for known variables and functions first.
+	syntaxes, err := getAllFunctionSyntaxes(tokens)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, syntax := range syntaxes {
+		program.Functions[syntax] = &Function{}
+	}
+
 	syntax := ""
+	currentFunction := "start"
 	var args []interface{}
 
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 
 		switch token.Kind {
+		case TokenKindColon:
+			currentFunction = syntax
+			syntax = ""
+			i++ // skip Endline
+
 		case TokenKindWord:
 			if token.Value == WordDeclare {
 				name, ty, newI, err := consumeDeclare(tokens, i)
@@ -53,18 +71,70 @@ func Parse(r io.Reader) (*Program, error) {
 			args = append(args, token.Value)
 
 		case TokenKindEndline:
-			sentence := System.SentenceForSyntax(syntax, args)
+			// Local function.
+			sentence := program.SentenceForSyntax(syntax, args)
+			if sentence != nil {
+				goto found
+			}
+
+			// System function.
+			sentence = System.SentenceForSyntax(syntax, args)
 			if sentence == nil {
 				return nil, fmt.Errorf("cannot understand: %s", syntax)
 			}
 
-			program.Sentences = append(program.Sentences, sentence)
+		found:
+			program.Functions[currentFunction].Sentences =
+				append(program.Functions[currentFunction].Sentences, sentence)
 			syntax = ""
 			args = nil
 		}
 	}
 
 	return program, nil
+}
+
+func getAllFunctionSyntaxes(tokens []Token) ([]string, error) {
+	syntaxes := []string{"start"}
+	variables := map[string]struct{}{}
+	syntax := ""
+
+	for i := 0; i < len(tokens); i++ {
+		token := tokens[i]
+
+		switch token.Kind {
+		case TokenKindColon:
+			syntaxes = append(syntaxes, syntax)
+			syntax = ""
+			i++ // skip Endline
+
+		case TokenKindWord:
+			if token.Value == WordDeclare {
+				name, _, newI, err := consumeDeclare(tokens, i)
+				if err != nil {
+					return nil, err
+				}
+
+				variables[name] = struct{}{}
+				i = newI
+				continue
+			}
+
+			if _, ok := variables[token.Value]; ok {
+				syntax = appendSyntax(syntax, "?")
+			} else {
+				syntax = appendSyntax(syntax, token.Value)
+			}
+
+		case TokenKindText:
+			syntax = appendSyntax(syntax, "?")
+
+		case TokenKindEndline:
+			syntax = ""
+		}
+	}
+
+	return syntaxes, nil
 }
 
 func consumeDeclare(tokens []Token, offset int) (string, string, int, error) {

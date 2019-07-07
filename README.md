@@ -5,6 +5,7 @@
       * [Sentences](#sentences)
       * [Comments](#comments)
       * [Variables](#variables)
+      * [Functions (Custom Sentences)](#functions-custom-sentences)
    * [Examples](#examples)
       * [Hello, World!](#hello-world)
       * [Variables](#variables-1)
@@ -123,6 +124,19 @@ The default value will be empty, you can set the value with:
 ```
 set my-var to "hello"
 ```
+
+## Functions (Custom Sentences)
+
+Custom sentences can be defined by using the `:` character:
+
+```
+print everything:
+	display "Hello"
+	display "World"
+```
+
+The whitespace is not required. However, it is easier to read when content of
+functions are indented with spaces or tabs.
 
 # Examples
 

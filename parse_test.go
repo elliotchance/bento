@@ -18,16 +18,23 @@ func TestParse(t *testing.T) {
 			bento: "",
 			expected: &Program{
 				Variables: map[string]*Variable{},
+				Functions: map[string]*Function{
+					"start": {},
+				},
 			},
 		},
 		"Display": {
 			bento: `Display "Hello, World!"`,
 			expected: &Program{
 				Variables: map[string]*Variable{},
-				Sentences: []*Sentence{
-					System.SentenceForSyntax("display ?", []interface{}{
-						"Hello, World!",
-					}),
+				Functions: map[string]*Function{
+					"start": {
+						Sentences: []*Sentence{
+							System.SentenceForSyntax("display ?", []interface{}{
+								"Hello, World!",
+							}),
+						},
+					},
 				},
 			},
 		},
@@ -35,13 +42,17 @@ func TestParse(t *testing.T) {
 			bento: "Display \"hello\"\ndisplay \"twice!\"",
 			expected: &Program{
 				Variables: map[string]*Variable{},
-				Sentences: []*Sentence{
-					System.SentenceForSyntax("display ?", []interface{}{
-						"hello",
-					}),
-					System.SentenceForSyntax("display ?", []interface{}{
-						"twice!",
-					}),
+				Functions: map[string]*Function{
+					"start": {
+						Sentences: []*Sentence{
+							System.SentenceForSyntax("display ?", []interface{}{
+								"hello",
+							}),
+							System.SentenceForSyntax("display ?", []interface{}{
+								"twice!",
+							}),
+						},
+					},
 				},
 			},
 		},
@@ -54,6 +65,9 @@ func TestParse(t *testing.T) {
 						Value: "",
 					},
 				},
+				Functions: map[string]*Function{
+					"start": {},
+				},
 			},
 		},
 		"Declare2": {
@@ -65,10 +79,56 @@ func TestParse(t *testing.T) {
 						Value: "",
 					},
 				},
-				Sentences: []*Sentence{
-					System.SentenceForSyntax("display ?", []interface{}{
-						VariableReference("foo"),
-					}),
+				Functions: map[string]*Function{
+					"start": {
+						Sentences: []*Sentence{
+							System.SentenceForSyntax("display ?", []interface{}{
+								VariableReference("foo"),
+							}),
+						},
+					},
+				},
+			},
+		},
+		"Function1": {
+			bento: "display \"hi\"\ndo something:\ndisplay \"ok\"",
+			expected: &Program{
+				Variables: map[string]*Variable{},
+				Functions: map[string]*Function{
+					"start": {
+						Sentences: []*Sentence{
+							System.SentenceForSyntax("display ?", []interface{}{
+								"hi",
+							}),
+						},
+					},
+					"do something": {
+						Sentences: []*Sentence{
+							System.SentenceForSyntax("display ?", []interface{}{
+								"ok",
+							}),
+						},
+					},
+				},
+			},
+		},
+		"Function2": {
+			bento: "do something\ndo something:\ndisplay \"ok\"",
+			expected: &Program{
+				Variables: map[string]*Variable{},
+				Functions: map[string]*Function{
+					"start": {
+						Sentences: []*Sentence{
+							{},
+						},
+					},
+					"do something": {
+						Sentences: []*Sentence{
+							System.SentenceForSyntax("display ?", []interface{}{
+								"ok",
+							}),
+						},
+					},
 				},
 			},
 		},

@@ -2,13 +2,11 @@ package main
 
 type Program struct {
 	Variables map[string]*Variable
-	Sentences []*Sentence
+	Functions map[string]*Function
 }
 
 func (program *Program) Run() {
-	for _, sentence := range program.Sentences {
-		sentence.Run(program)
-	}
+	program.Functions["start"].Run(program)
 }
 
 func (program *Program) ValueOf(val interface{}) interface{} {
@@ -19,4 +17,17 @@ func (program *Program) ValueOf(val interface{}) interface{} {
 	default:
 		return val
 	}
+}
+
+func (program *Program) SentenceForSyntax(syntax string, args []interface{}) *Sentence {
+	if _, ok := program.Functions[syntax]; ok {
+		return &Sentence{
+			Handler: func(program *Program, _ []interface{}) {
+				program.Functions[syntax].Run(program)
+			},
+			Args: args,
+		}
+	}
+
+	return nil
 }
