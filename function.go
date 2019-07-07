@@ -1,6 +1,7 @@
 package main
 
 type Function struct {
+	Variables map[string]*Variable
 	Sentences []*Sentence
 }
 

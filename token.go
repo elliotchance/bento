@@ -7,14 +7,18 @@ import (
 )
 
 const (
-	TokenKindWord = iota
-	TokenKindText
-	TokenKindEndline
-	TokenKindColon
+	TokenKindEndOfFile    = "end of file"
+	TokenKindEndOfLine    = "end of line"
+	TokenKindWord         = "word"
+	TokenKindText         = "text"
+	TokenKindColon        = ":"
+	TokenKindOpenBracket  = "("
+	TokenKindCloseBracket = ")"
+	TokenKindComma        = ","
 )
 
 type Token struct {
-	Kind  int
+	Kind  string
 	Value string
 }
 
@@ -29,13 +33,25 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 
 	for i := 0; i < len(entire); i++ {
 		switch entire[i] {
+		case ',':
+			tokens = appendWord(tokens, &word)
+			tokens = append(tokens, Token{TokenKindComma, ""})
+
+		case '(':
+			tokens = appendWord(tokens, &word)
+			tokens = append(tokens, Token{TokenKindOpenBracket, ""})
+
+		case ')':
+			tokens = appendWord(tokens, &word)
+			tokens = append(tokens, Token{TokenKindCloseBracket, ""})
+
 		case ':':
 			tokens = appendWord(tokens, &word)
 			tokens = append(tokens, Token{TokenKindColon, ""})
-			tokens = appendEndline(tokens)
+			tokens = appendEndOfLine(tokens)
 
 		case '#':
-			tokens = appendEndline(tokens)
+			tokens = appendEndOfLine(tokens)
 			for ; i < len(entire); i++ {
 				if entire[i] == '\n' {
 					break
@@ -44,7 +60,7 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 
 		case '\n':
 			tokens = appendWord(tokens, &word)
-			tokens = appendEndline(tokens)
+			tokens = appendEndOfLine(tokens)
 
 		case '"':
 			i++
@@ -66,7 +82,8 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 	}
 
 	tokens = appendWord(tokens, &word)
-	tokens = appendEndline(tokens)
+	tokens = appendEndOfLine(tokens)
+	tokens = append(tokens, Token{TokenKindEndOfFile, ""})
 
 	return
 }
@@ -81,9 +98,9 @@ func appendWord(tokens []Token, word *string) []Token {
 	return tokens
 }
 
-func appendEndline(tokens []Token) []Token {
-	if len(tokens) > 0 && tokens[len(tokens)-1].Kind != TokenKindEndline {
-		return append(tokens, Token{TokenKindEndline, ""})
+func appendEndOfLine(tokens []Token) []Token {
+	if len(tokens) > 0 && tokens[len(tokens)-1].Kind != TokenKindEndOfLine {
+		return append(tokens, Token{TokenKindEndOfLine, ""})
 	}
 
 	return tokens

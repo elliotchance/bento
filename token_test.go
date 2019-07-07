@@ -13,14 +13,17 @@ func TestTokenize(t *testing.T) {
 		expected []Token
 	}{
 		"Empty": {
-			bento:    "",
-			expected: nil,
+			bento: "",
+			expected: []Token{
+				{TokenKindEndOfFile, ""},
+			},
 		},
 		"Word": {
 			bento: "hello",
 			expected: []Token{
 				{TokenKindWord, "hello"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"TwoWords": {
@@ -28,7 +31,8 @@ func TestTokenize(t *testing.T) {
 			expected: []Token{
 				{TokenKindWord, "hello"},
 				{TokenKindWord, "world"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"Mix1": {
@@ -36,7 +40,8 @@ func TestTokenize(t *testing.T) {
 			expected: []Token{
 				{TokenKindWord, "display"},
 				{TokenKindText, "hello"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"Mix2": {
@@ -45,7 +50,8 @@ func TestTokenize(t *testing.T) {
 				{TokenKindWord, "display"},
 				{TokenKindText, "hello"},
 				{TokenKindWord, "ok"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"AlwaysLowerCase": {
@@ -55,7 +61,8 @@ func TestTokenize(t *testing.T) {
 				{TokenKindWord, "in"},
 				{TokenKindWord, "mixed"},
 				{TokenKindText, "Case"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"MultipleSpaces": {
@@ -65,27 +72,30 @@ func TestTokenize(t *testing.T) {
 				{TokenKindWord, "bar"},
 				{TokenKindText, " baz  qux"},
 				{TokenKindWord, "quux"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"Newlines": {
 			bento: "foo\nbar\n\nbaz\n",
 			expected: []Token{
 				{TokenKindWord, "foo"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
 				{TokenKindWord, "bar"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
 				{TokenKindWord, "baz"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"BeginNewline": {
 			bento: "\n\nfoo\nbar",
 			expected: []Token{
 				{TokenKindWord, "foo"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
 				{TokenKindWord, "bar"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"DisplayTwice": {
@@ -93,30 +103,35 @@ func TestTokenize(t *testing.T) {
 			expected: []Token{
 				{TokenKindWord, "display"},
 				{TokenKindText, "hello"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
 				{TokenKindWord, "display"},
 				{TokenKindText, "twice!"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"Comment1": {
-			bento:    "# comment",
-			expected: nil,
+			bento: "# comment",
+			expected: []Token{
+				{TokenKindEndOfFile, ""},
+			},
 		},
 		"Comment2": {
 			bento: "# comment\ndisplay",
 			expected: []Token{
 				{TokenKindWord, "display"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"Comment3": {
 			bento: "display #comment\ndisplay",
 			expected: []Token{
 				{TokenKindWord, "display"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
 				{TokenKindWord, "display"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"Function1": {
@@ -125,10 +140,11 @@ func TestTokenize(t *testing.T) {
 				{TokenKindWord, "do"},
 				{TokenKindWord, "something"},
 				{TokenKindColon, ""},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
 				{TokenKindWord, "something"},
 				{TokenKindWord, "else"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"Function2": {
@@ -137,10 +153,11 @@ func TestTokenize(t *testing.T) {
 				{TokenKindWord, "do"},
 				{TokenKindWord, "something"},
 				{TokenKindColon, ""},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
 				{TokenKindWord, "something"},
 				{TokenKindWord, "else"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 		"Tabs": {
@@ -149,7 +166,45 @@ func TestTokenize(t *testing.T) {
 				{TokenKindWord, "foo"},
 				{TokenKindWord, "bar"},
 				{TokenKindText, "baz	"},
-				{TokenKindEndline, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
+		"FunctionWithArgument": {
+			bento: `greet persons-name now (persons-name is text):`,
+			expected: []Token{
+				{TokenKindWord, "greet"},
+				{TokenKindWord, "persons-name"},
+				{TokenKindWord, "now"},
+				{TokenKindOpenBracket, ""},
+				{TokenKindWord, "persons-name"},
+				{TokenKindWord, "is"},
+				{TokenKindWord, "text"},
+				{TokenKindCloseBracket, ""},
+				{TokenKindColon, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
+		"FunctionWithArguments": {
+			bento: `say greeting to persons-name (persons-name is text, greeting is text):`,
+			expected: []Token{
+				{TokenKindWord, "say"},
+				{TokenKindWord, "greeting"},
+				{TokenKindWord, "to"},
+				{TokenKindWord, "persons-name"},
+				{TokenKindOpenBracket, ""},
+				{TokenKindWord, "persons-name"},
+				{TokenKindWord, "is"},
+				{TokenKindWord, "text"},
+				{TokenKindComma, ""},
+				{TokenKindWord, "greeting"},
+				{TokenKindWord, "is"},
+				{TokenKindWord, "text"},
+				{TokenKindCloseBracket, ""},
+				{TokenKindColon, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
 			},
 		},
 	} {
