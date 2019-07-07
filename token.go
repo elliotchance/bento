@@ -10,6 +10,7 @@ const (
 	TokenKindWord = iota
 	TokenKindText
 	TokenKindEndline
+	TokenKindColon
 )
 
 type Token struct {
@@ -28,6 +29,11 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 
 	for i := 0; i < len(entire); i++ {
 		switch entire[i] {
+		case ':':
+			tokens = appendWord(tokens, &word)
+			tokens = append(tokens, Token{TokenKindColon, ""})
+			tokens = appendEndline(tokens)
+
 		case '#':
 			tokens = appendEndline(tokens)
 			for ; i < len(entire); i++ {
@@ -51,7 +57,7 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 				}
 			}
 
-		case ' ':
+		case ' ', '\t':
 			tokens = appendWord(tokens, &word)
 
 		default:

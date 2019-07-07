@@ -1,0 +1,6 @@
+print everything
+print everything
+
+print everything:
+	display "Hello"
+	display "World"

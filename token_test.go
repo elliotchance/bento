@@ -119,6 +119,39 @@ func TestTokenize(t *testing.T) {
 				{TokenKindEndline, ""},
 			},
 		},
+		"Function1": {
+			bento: "do something:\nsomething else",
+			expected: []Token{
+				{TokenKindWord, "do"},
+				{TokenKindWord, "something"},
+				{TokenKindColon, ""},
+				{TokenKindEndline, ""},
+				{TokenKindWord, "something"},
+				{TokenKindWord, "else"},
+				{TokenKindEndline, ""},
+			},
+		},
+		"Function2": {
+			bento: "do something: something else",
+			expected: []Token{
+				{TokenKindWord, "do"},
+				{TokenKindWord, "something"},
+				{TokenKindColon, ""},
+				{TokenKindEndline, ""},
+				{TokenKindWord, "something"},
+				{TokenKindWord, "else"},
+				{TokenKindEndline, ""},
+			},
+		},
+		"Tabs": {
+			bento: `	foo	bar "baz	"	`,
+			expected: []Token{
+				{TokenKindWord, "foo"},
+				{TokenKindWord, "bar"},
+				{TokenKindText, "baz	"},
+				{TokenKindEndline, ""},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
 			actual, err := Tokenize(strings.NewReader(test.bento))
