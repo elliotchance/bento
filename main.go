@@ -6,7 +6,13 @@ import (
 	"os"
 )
 
+var (
+	flagTrace bool
+)
+
 func main() {
+	flag.BoolVar(&flagTrace, "trace", false,
+		"Show all executed sentences and values.")
 	flag.Parse()
 
 	for _, arg := range flag.Args() {
@@ -21,6 +27,7 @@ func main() {
 			log.Fatalln(err)
 		}
 
+		program.Trace = flagTrace
 		program.Run()
 	}
 }

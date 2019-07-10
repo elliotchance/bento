@@ -1,11 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Program struct {
 	Variables       map[string]*Variable
 	Functions       map[string]*Function
 	CurrentFunction string
+	Trace           bool
+	StackLevel      int
 }
 
 func (program *Program) Run() {
@@ -36,6 +41,7 @@ func (program *Program) ValueOf(val interface{}) interface{} {
 func (program *Program) SentenceForSyntax(syntax string, args []interface{}) *Sentence {
 	if _, ok := program.Functions[syntax]; ok {
 		return &Sentence{
+			Syntax: syntax,
 			Handler: func(program *Program, args []interface{}) {
 				program.CurrentFunction = syntax
 
@@ -51,4 +57,15 @@ func (program *Program) SentenceForSyntax(syntax string, args []interface{}) *Se
 	}
 
 	return nil
+}
+
+func (program *Program) PrintTrace(line string, args []interface{}) {
+	if program.Trace {
+		for len(args) > 0 {
+			line = strings.Replace(line, "?", fmt.Sprintf("%v", args[0]), 1)
+			args = args[1:]
+		}
+
+		fmt.Println("# " + strings.Repeat("  ", program.StackLevel) + line)
+	}
 }
