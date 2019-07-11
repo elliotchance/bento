@@ -1,15 +1,22 @@
 package main
 
+import (
+	"io"
+	"os"
+)
+
 type VirtualMachine struct {
 	program        *CompiledProgram
 	memory         []interface{}
 	memoryOffset   int
 	previousOffset int
+	out            io.Writer
 }
 
 func NewVirtualMachine(program *CompiledProgram) *VirtualMachine {
 	return &VirtualMachine{
 		program: program,
+		out:     os.Stdout,
 	}
 }
 

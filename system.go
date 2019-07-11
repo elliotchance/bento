@@ -9,7 +9,7 @@ var System = map[string]func(vm *VirtualMachine, args []int){
 }
 
 func display(vm *VirtualMachine, args []int) {
-	fmt.Printf("%v\n", *vm.GetArg(args[0]).(*string))
+	_, _ = fmt.Fprintf(vm.out, "%v\n", *vm.GetArg(args[0]).(*string))
 }
 
 func setVariable(vm *VirtualMachine, args []int) {

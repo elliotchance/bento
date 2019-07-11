@@ -1,0 +1,11 @@
+start:
+	print everything
+	say "Hi" to "Bob"
+
+print everything:
+	display "Hello"
+	display "World"
+
+say greeting to persons-name (persons-name is text, greeting is text):
+	display greeting
+	display persons-name

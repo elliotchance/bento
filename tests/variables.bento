@@ -1,0 +1,8 @@
+start:
+	declare first-var is text
+	declare second-var is text
+
+	set first-var to "hello"
+
+	display first-var
+	display second-var
