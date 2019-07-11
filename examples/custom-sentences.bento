@@ -1,5 +1,6 @@
-print everything
-say "Hi" to "Bob"
+start:
+	print everything
+	say "Hi" to "Bob"
 
 print everything:
 	display "Hello"

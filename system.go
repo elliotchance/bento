@@ -2,22 +2,16 @@ package main
 
 import "fmt"
 
-var System = &Library{
-	Sentences: map[string]*Sentence{
-		"display ?": {
-			Handler: display,
-		},
-		"set ? to ?": {
-			Handler: setVariable,
-		},
-	},
+// System defines all of the inbuilt functions.
+var System = map[string]func(vm *VirtualMachine, args []int){
+	"display ?":  display,
+	"set ? to ?": setVariable,
 }
 
-func display(program *Program, args []interface{}) {
-	fmt.Printf("%v\n", program.ValueOf(args[0]))
+func display(vm *VirtualMachine, args []int) {
+	fmt.Printf("%v\n", *vm.GetArg(args[0]).(*string))
 }
 
-func setVariable(program *Program, args []interface{}) {
-	name := string(args[0].(VariableReference))
-	program.Variables[name].Value = args[1]
+func setVariable(vm *VirtualMachine, args []int) {
+	vm.SetArg(args[0], NewText(*vm.GetArg(args[1]).(*string)))
 }

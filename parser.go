@@ -13,11 +13,10 @@ const (
 )
 
 type Parser struct {
-	r               io.Reader
-	tokens          []Token
-	offset          int
-	program         *Program
-	currentFunction string
+	r       io.Reader
+	tokens  []Token
+	offset  int
+	program *Program
 }
 
 func NewParser(r io.Reader) *Parser {
@@ -34,63 +33,59 @@ func (parser *Parser) Parse() (*Program, error) {
 	}
 
 	parser.program = &Program{
-		Variables: map[string]*Variable{},
 		Functions: map[string]*Function{},
 	}
-	parser.currentFunction = "start"
-
-	// We have to parse the whole file for known variables and functions first.
-	parser.prepareAllVariablesAndFunctionDeclarations()
 
 	// Now we can compile the program.
 	for !parser.isFinished() {
-		// declare ...
-		_, _, err := parser.consumeDeclare()
-		if err == nil {
-			// Ignore this, it's already been handled by
-			// prepareAllVariablesAndFunctionDeclarations.
-
-			continue
+		function, err := parser.consumeFunction()
+		if err != nil {
+			return nil, err
 		}
 
-		// function declaration:
-		declarationSyntax, _, err := parser.consumeFunctionDeclaration()
-		if err == nil {
-			parser.currentFunction = declarationSyntax
-
-			continue
-		}
-
-		// sentence
-		sentence, args, err := parser.consumeSentenceCall()
-		if err == nil {
-			syntax := sentence.Syntax()
-
-			// Local function.
-			sentence := parser.program.SentenceForSyntax(syntax, args)
-			if sentence != nil {
-				goto found
-			}
-
-			// System function.
-			sentence = System.SentenceForSyntax(syntax, args)
-			if sentence != nil {
-				goto found
-			}
-
-			return nil, fmt.Errorf("cannot understand: %s", syntax)
-
-		found:
-			parser.program.Functions[parser.currentFunction].Sentences = append(
-				parser.program.Functions[parser.currentFunction].Sentences,
-				sentence)
-			continue
-		}
-
-		return nil, fmt.Errorf("unexpected %s", parser.tokens[parser.offset])
+		parser.program.AppendFunction(function)
 	}
 
 	return parser.program, nil
+}
+
+func (parser *Parser) consumeLine() error {
+	// function declaration:
+	//declarationSyntax, vars, err := parser.consumeFunctionDeclaration()
+	//if err == nil {
+	//	parser.currentFunction = declarationSyntax
+	//	parser.program.AppendFunction()
+	//
+	//	continue
+	//}
+
+	// sentence
+	//sentence, args, err := parser.consumeSentenceCall()
+	//if err == nil {
+	//	syntax := sentence.Syntax()
+
+	// Local function.
+	//sentence := parser.program.SentenceForSyntax(syntax, args)
+	//if sentence != nil {
+	//	goto found
+	//}
+	//
+	//// System function.
+	//sentence = System.SentenceForSyntax(syntax, args)
+	//if sentence != nil {
+	//	goto found
+	//}
+
+	//return nil, fmt.Errorf("cannot understand: %s", syntax)
+
+	//found:
+	//	parser.program.Functions[parser.currentFunction].Sentences = append(
+	//		parser.program.Functions[parser.currentFunction].Sentences,
+	//		sentence)
+	//	continue
+	//}
+
+	return fmt.Errorf("unexpected %s", parser.tokens[parser.offset])
 }
 
 func (parser *Parser) consumeToken(kind string) (Token, error) {
@@ -217,16 +212,31 @@ func (parser *Parser) consumeVariableIsTypeList() (list map[string]string, err e
 	return
 }
 
-func (parser *Parser) consumeSentenceWords() (Tokens, error) {
+func (parser *Parser) consumeSentenceWords(varMap map[string]*VariableDefinition) ([]interface{}, error) {
 	tokens := parser.consumeTokens([]string{TokenKindWord, TokenKindText})
 	if len(tokens) == 0 {
 		return nil, fmt.Errorf("expected sentence, but found something else")
 	}
 
-	return tokens, nil
+	var words []interface{}
+	for _, token := range tokens {
+		switch token.Kind {
+		case TokenKindWord:
+			if _, ok := varMap[token.Value]; ok {
+				words = append(words, VariableReference(token.Value))
+			} else {
+				words = append(words, token.Value)
+			}
+
+		case TokenKindText:
+			words = append(words, NewText(token.Value))
+		}
+	}
+
+	return words, nil
 }
 
-func (parser *Parser) consumeSentenceCall() (tokens Tokens, args []interface{}, err error) {
+func (parser *Parser) consumeSentenceCall(varMap map[string]*VariableDefinition) (tokens []interface{}, err error) {
 	originalOffset := parser.offset
 	defer func() {
 		if err != nil {
@@ -234,51 +244,20 @@ func (parser *Parser) consumeSentenceCall() (tokens Tokens, args []interface{}, 
 		}
 	}()
 
-	for ; !parser.lineIsFinished(); parser.offset++ {
-		token := parser.tokens[parser.offset]
-		switch token.Kind {
-		case TokenKindWord:
-			// Local variable.
-			if _, ok := parser.program.Functions[parser.currentFunction].Variables[token.Value]; ok {
-				args = append(args, VariableReference(token.Value))
-				token.Value = "?"
-
-				goto done
-			}
-
-			// Global variable.
-			if _, ok := parser.program.Variables[token.Value]; ok {
-				args = append(args, VariableReference(token.Value))
-				token.Value = "?"
-
-				goto done
-			}
-
-		case TokenKindText:
-			args = append(args, token.Value)
-			token.Value = "?"
-
-		default:
-			break
-		}
-
-	done:
-		tokens = append(tokens, token)
+	words, err := parser.consumeSentenceWords(varMap)
+	if err != nil {
+		return nil, err
 	}
 
 	_, err = parser.consumeToken(TokenKindEndOfLine)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	if len(tokens) == 0 {
-		return nil, nil, fmt.Errorf("expected sentence call")
-	}
-
-	return
+	return words, nil
 }
 
-func (parser *Parser) consumeFunctionDeclaration() (syntax string, vars map[string]*Variable, err error) {
+func (parser *Parser) consumeFunction() (function *Function, err error) {
 	originalOffset := parser.offset
 	defer func() {
 		if err != nil {
@@ -286,93 +265,85 @@ func (parser *Parser) consumeFunctionDeclaration() (syntax string, vars map[stri
 		}
 	}()
 
-	var sentenceTokens Tokens
-	sentenceTokens, err = parser.consumeSentenceWords()
+	function, err = parser.consumeFunctionDeclaration()
+	if err != nil {
+		return nil, err
+	}
+
+	for !parser.isFinished() {
+		// declare ...
+		name, ty, err := parser.consumeDeclare()
+		if err == nil {
+			function.AppendDeclare(name, ty)
+			continue
+		}
+
+		// Normal sentence.
+		var words []interface{}
+		words, err = parser.consumeSentenceCall(function.VariableMap())
+		if err == nil {
+			function.AppendSentence(words)
+			continue
+		}
+
+		return function, nil
+	}
+
+	return function, nil
+}
+
+func (parser *Parser) consumeFunctionDeclaration() (function *Function, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	var words []interface{}
+	words, err = parser.consumeSentenceWords(nil)
 	if err != nil {
 		return
 	}
 
+	function = &Function{
+		Definition: &Sentence{
+			Tokens: words,
+		},
+	}
+
 	_, err = parser.consumeToken(TokenKindOpenBracket)
 	if err == nil {
-		varsList, err := parser.consumeVariableIsTypeList()
+		vars, err := parser.consumeVariableIsTypeList()
 		if err != nil {
-			return "", nil, err
+			return nil, err
 		}
 
 		_, err = parser.consumeToken(TokenKindCloseBracket)
 		if err != nil {
-			return "", nil, err
+			return nil, err
 		}
 
-		vars = map[string]*Variable{}
-		position := 0
-		for i := 0; i < len(sentenceTokens); i++ {
-			for name, ty := range varsList {
-				if sentenceTokens[i].Value == name {
-					sentenceTokens[i].Value = "?"
+		for i, word := range function.Definition.Tokens {
+			if ty, ok := vars[word.(string)]; ok {
+				function.Definition.Tokens[i] = VariableReference(word.(string))
 
-					if _, ok := vars[name]; !ok {
-						vars[name] = &Variable{
-							Type:     ty,
-							Position: position,
-						}
-						position++
-					}
-
-					break
-				}
+				// Note: It's important that we add the arguments in the order
+				// that they appear rather than the order that they are defined.
+				// Appending them in this loop will ensure that.
+				function.AppendArgument(word.(string), ty)
 			}
 		}
 	}
 
 	_, err = parser.consumeToken(TokenKindColon)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
-	_, err = parser.consumeToken(TokenKindEndOfLine)
-	if err != nil {
-		return "", nil, err
-	}
+	parser.consumeTokens([]string{TokenKindEndOfLine})
 
-	return sentenceTokens.Syntax(), vars, nil
-}
-
-func (parser *Parser) prepareAllVariablesAndFunctionDeclarations() {
-	parser.program.Functions["start"] = &Function{}
-
-	for parser.offset = 0; parser.offset < len(parser.tokens); parser.offset++ {
-		// declare ...
-		name, ty, err := parser.consumeDeclare()
-		if err == nil {
-			parser.program.Variables[name] = &Variable{
-				Type:  ty,
-				Value: "",
-			}
-
-			continue
-		}
-
-		// function declaration:
-		declarationSyntax, vars, err := parser.consumeFunctionDeclaration()
-		if err == nil {
-			parser.program.Functions[declarationSyntax] = &Function{
-				Variables: vars,
-			}
-			continue
-		}
-
-		// It didn't find a match. We should fast-forward to the start of the
-		// next line.
-		parser.offset++
-		for ; parser.offset < len(parser.tokens); parser.offset++ {
-			if parser.tokens[parser.offset].Kind == TokenKindEndOfLine {
-				break
-			}
-		}
-	}
-
-	parser.offset = 0
+	return function, nil
 }
 
 func (parser *Parser) isFinished() bool {
