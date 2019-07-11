@@ -1,3 +1,4 @@
 # Comments start with a hash.
 
-display "Hello, World!"
+start:
+	display "Hello, World!"

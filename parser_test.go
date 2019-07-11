@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"strings"
@@ -17,116 +16,165 @@ func TestParser_Parse(t *testing.T) {
 		"Empty": {
 			bento: "",
 			expected: &Program{
-				Variables: map[string]*Variable{},
+				Functions: map[string]*Function{},
+			},
+		},
+		"EmptyStart": {
+			bento: "start:",
+			expected: &Program{
 				Functions: map[string]*Function{
-					"start": {},
+					"start": {
+						Definition: &Sentence{Tokens: []interface{}{"start"}},
+					},
 				},
 			},
 		},
 		"Display": {
-			bento: `Display "Hello, World!"`,
+			bento: `start: Display "Hello, World!"`,
 			expected: &Program{
-				Variables: map[string]*Variable{},
 				Functions: map[string]*Function{
 					"start": {
+						Definition: &Sentence{Tokens: []interface{}{"start"}},
 						Sentences: []*Sentence{
-							System.SentenceForSyntax("display ?", []interface{}{
-								"Hello, World!",
-							}),
+							{
+								Tokens: []interface{}{
+									"display", NewText("Hello, World!"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"Display2": {
+			bento: "start:\nDisplay \"Hello, World!\"",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Tokens: []interface{}{"start"}},
+						Sentences: []*Sentence{
+							{
+								Tokens: []interface{}{
+									"display", NewText("Hello, World!"),
+								},
+							},
 						},
 					},
 				},
 			},
 		},
 		"DisplayTwice": {
-			bento: "Display \"hello\"\ndisplay \"twice!\"",
+			bento: "start: Display \"hello\"\ndisplay \"twice!\"",
 			expected: &Program{
-				Variables: map[string]*Variable{},
 				Functions: map[string]*Function{
 					"start": {
+						Definition: &Sentence{Tokens: []interface{}{"start"}},
 						Sentences: []*Sentence{
-							System.SentenceForSyntax("display ?", []interface{}{
-								"hello",
-							}),
-							System.SentenceForSyntax("display ?", []interface{}{
-								"twice!",
-							}),
+							{
+								Tokens: []interface{}{
+									"display", NewText("hello"),
+								},
+							},
+							{
+								Tokens: []interface{}{
+									"display", NewText("twice!"),
+								},
+							},
 						},
 					},
 				},
 			},
 		},
 		"Declare1": {
-			bento: "declare some-variable is text",
+			bento: "start: declare some-variable is text",
 			expected: &Program{
-				Variables: map[string]*Variable{
-					"some-variable": {
-						Type:  "text",
-						Value: "",
-					},
-				},
 				Functions: map[string]*Function{
-					"start": {},
+					"start": {
+						Definition: &Sentence{Tokens: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "some-variable",
+								Type:       "text",
+								LocalScope: true,
+							},
+						},
+					},
 				},
 			},
 		},
 		"Declare2": {
-			bento: "declare foo is text\ndisplay foo",
+			bento: "start: declare foo is text\ndisplay foo",
 			expected: &Program{
-				Variables: map[string]*Variable{
-					"foo": {
-						Type:  "text",
-						Value: "",
-					},
-				},
 				Functions: map[string]*Function{
 					"start": {
+						Definition: &Sentence{Tokens: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "foo",
+								Type:       "text",
+								LocalScope: true,
+							},
+						},
 						Sentences: []*Sentence{
-							System.SentenceForSyntax("display ?", []interface{}{
-								VariableReference("foo"),
-							}),
+							{
+								Tokens: []interface{}{
+									"display", VariableReference("foo"),
+								},
+							},
 						},
 					},
 				},
 			},
 		},
 		"Function1": {
-			bento: "display \"hi\"\ndo something:\ndisplay \"ok\"",
+			bento: "start:  display \"hi\"\ndo something:\ndisplay \"ok\"",
 			expected: &Program{
-				Variables: map[string]*Variable{},
 				Functions: map[string]*Function{
 					"start": {
+						Definition: &Sentence{Tokens: []interface{}{"start"}},
 						Sentences: []*Sentence{
-							System.SentenceForSyntax("display ?", []interface{}{
-								"hi",
-							}),
+							{
+								Tokens: []interface{}{
+									"display", NewText("hi"),
+								},
+							},
 						},
 					},
 					"do something": {
+						Definition: &Sentence{Tokens: []interface{}{"do", "something"}},
 						Sentences: []*Sentence{
-							System.SentenceForSyntax("display ?", []interface{}{
-								"ok",
-							}),
+							{
+								Tokens: []interface{}{
+									"display", NewText("ok"),
+								},
+							},
 						},
 					},
 				},
 			},
 		},
 		"Function2": {
-			bento: "do something\ndo something:\ndisplay \"ok\"",
+			bento: "start:do something\ndo something:\ndisplay \"ok\"",
 			expected: &Program{
-				Variables: map[string]*Variable{},
 				Functions: map[string]*Function{
 					"start": {
+						Definition: &Sentence{Tokens: []interface{}{"start"}},
 						Sentences: []*Sentence{
-							{},
+							{
+								Tokens: []interface{}{
+									"do", "something",
+								},
+							},
 						},
 					},
 					"do something": {
+						Definition: &Sentence{Tokens: []interface{}{"do", "something"}},
 						Sentences: []*Sentence{
-							System.SentenceForSyntax("display ?", []interface{}{
-								"ok",
-							}),
+							{
+								Tokens: []interface{}{
+									"display", NewText("ok"),
+								},
+							},
 						},
 					},
 				},
@@ -135,60 +183,68 @@ func TestParser_Parse(t *testing.T) {
 		"FunctionWithArgument": {
 			bento: "greet persons-name now (persons-name is text):",
 			expected: &Program{
-				Variables: map[string]*Variable{},
 				Functions: map[string]*Function{
 					"greet ? now": {
-						Variables: map[string]*Variable{
-							"persons-name": {
-								Type: "text",
+						Definition: &Sentence{Tokens: []interface{}{"greet", VariableReference("persons-name"), "now"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "persons-name",
+								Type:       "text",
+								LocalScope: false,
 							},
 						},
 					},
-					"start": {},
 				},
 			},
 		},
 		"CallWithArgument": {
 			bento: "greet persons-name now (persons-name is text):\ndisplay persons-name",
 			expected: &Program{
-				Variables: map[string]*Variable{},
 				Functions: map[string]*Function{
 					"greet ? now": {
-						Variables: map[string]*Variable{
-							"persons-name": {
-								Type: "text",
+						Definition: &Sentence{Tokens: []interface{}{"greet", VariableReference("persons-name"), "now"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "persons-name",
+								Type:       "text",
+								LocalScope: false,
 							},
 						},
 						Sentences: []*Sentence{
 							{
-								Args: []interface{}{
-									VariableReference("persons-name"),
+								Tokens: []interface{}{
+									"display", VariableReference("persons-name"),
 								},
 							},
 						},
 					},
-					"start": {},
 				},
 			},
 		},
 		"FunctionWithArguments": {
 			bento: "say greeting to persons-name (persons-name is text, greeting is text):",
 			expected: &Program{
-				Variables: map[string]*Variable{},
 				Functions: map[string]*Function{
 					"say ? to ?": {
-						Variables: map[string]*Variable{
-							"greeting": {
-								Type:     "text",
-								Position: 0,
+						Definition: &Sentence{Tokens: []interface{}{
+							"say",
+							VariableReference("greeting"),
+							"to",
+							VariableReference("persons-name"),
+						}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "greeting",
+								Type:       "text",
+								LocalScope: false,
 							},
-							"persons-name": {
-								Type:     "text",
-								Position: 1,
+							{
+								Name:       "persons-name",
+								Type:       "text",
+								LocalScope: false,
 							},
 						},
 					},
-					"start": {},
 				},
 			},
 		},
@@ -198,8 +254,7 @@ func TestParser_Parse(t *testing.T) {
 			actual, err := parser.Parse()
 			require.NoError(t, err)
 
-			diff := cmp.Diff(test.expected, actual,
-				cmpopts.IgnoreTypes((SentenceHandler)(nil)))
+			diff := cmp.Diff(test.expected, actual)
 			assert.Empty(t, diff)
 		})
 	}
