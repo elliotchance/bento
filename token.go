@@ -48,7 +48,6 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 		case ':':
 			tokens = appendWord(tokens, &word)
 			tokens = append(tokens, Token{TokenKindColon, ""})
-			tokens = appendEndOfLine(tokens)
 
 		case '#':
 			tokens = appendEndOfLine(tokens)
@@ -92,7 +91,7 @@ func appendWord(tokens []Token, word *string) []Token {
 	if *word != "" {
 		token := Token{TokenKindWord, strings.ToLower(*word)}
 		*word = ""
-		tokens = append(tokens, token)
+		return append(tokens, token)
 	}
 
 	return tokens
