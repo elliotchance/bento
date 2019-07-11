@@ -1,0 +1,12 @@
+language: go
+
+go: "1.12.x"
+
+env:
+  global:
+    # This is only needed until Go 1.13 when it will be the default.
+    - GO111MODULE=on
+
+script:
+  - $(exit $(go fmt ./... | wc -l))
+  - go test ./... -race

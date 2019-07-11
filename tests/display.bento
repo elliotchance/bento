@@ -1,0 +1,9 @@
+start:
+	declare my-name is text
+
+	display "Hello, World!"
+	display ""
+	display my-name
+
+	set my-name to "Bob"
+	display my-name
