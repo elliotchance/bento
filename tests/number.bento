@@ -1,0 +1,8 @@
+start:
+	declare first-var is number
+	declare second-var is number
+
+	set first-var to 1.23
+
+	display first-var
+	display second-var

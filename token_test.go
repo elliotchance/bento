@@ -218,6 +218,80 @@ func TestTokenize(t *testing.T) {
 				{TokenKindEndOfFile, ""},
 			},
 		},
+		"DeclareNumber": {
+			bento: "declare foo is number",
+			expected: []Token{
+				{TokenKindWord, "declare"},
+				{TokenKindWord, "foo"},
+				{TokenKindWord, "is"},
+				{TokenKindWord, "number"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
+		"Zero": {
+			bento: "set foo to 0",
+			expected: []Token{
+				{TokenKindWord, "set"},
+				{TokenKindWord, "foo"},
+				{TokenKindWord, "to"},
+				{TokenKindNumber, "0"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
+		"Integer": {
+			bento: "set foo to 123",
+			expected: []Token{
+				{TokenKindWord, "set"},
+				{TokenKindWord, "foo"},
+				{TokenKindWord, "to"},
+				{TokenKindNumber, "123"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
+		"FloatNoNewLine": {
+			bento: "set foo to 1.23",
+			expected: []Token{
+				{TokenKindWord, "set"},
+				{TokenKindWord, "foo"},
+				{TokenKindWord, "to"},
+				{TokenKindNumber, "1.23"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
+		"Float": {
+			bento: "set foo to 1.23\n",
+			expected: []Token{
+				{TokenKindWord, "set"},
+				{TokenKindWord, "foo"},
+				{TokenKindWord, "to"},
+				{TokenKindNumber, "1.23"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
+		"TextNoNewLine": {
+			bento: `"hello"`,
+			expected: []Token{
+				{TokenKindText, "hello"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
+		"NegativeFloat": {
+			bento: "set foo to -1.23",
+			expected: []Token{
+				{TokenKindWord, "set"},
+				{TokenKindWord, "foo"},
+				{TokenKindWord, "to"},
+				{TokenKindNumber, "-1.23"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
 			actual, err := Tokenize(strings.NewReader(test.bento))

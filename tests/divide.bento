@@ -1,0 +1,11 @@
+start:
+	declare result is number
+
+	divide 1.23 by 7.89 into result
+	display result
+
+	divide 234 by 34 into result
+	display result
+
+	divide result by -34.3424 into result
+	display result

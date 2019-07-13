@@ -4,12 +4,14 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
+	"unicode"
 )
 
 const (
 	TokenKindEndOfFile    = "end of file"
 	TokenKindEndOfLine    = "end of line"
 	TokenKindWord         = "word"
+	TokenKindNumber       = "number"
 	TokenKindText         = "text"
 	TokenKindColon        = ":"
 	TokenKindOpenBracket  = "("
@@ -29,24 +31,19 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 	}
 
 	entire := string(data)
-	word := ""
 
 	for i := 0; i < len(entire); i++ {
 		switch entire[i] {
 		case ',':
-			tokens = appendWord(tokens, &word)
 			tokens = append(tokens, Token{TokenKindComma, ""})
 
 		case '(':
-			tokens = appendWord(tokens, &word)
 			tokens = append(tokens, Token{TokenKindOpenBracket, ""})
 
 		case ')':
-			tokens = appendWord(tokens, &word)
 			tokens = append(tokens, Token{TokenKindCloseBracket, ""})
 
 		case ':':
-			tokens = appendWord(tokens, &word)
 			tokens = append(tokens, Token{TokenKindColon, ""})
 
 		case '#':
@@ -58,43 +55,72 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 			}
 
 		case '\n':
-			tokens = appendWord(tokens, &word)
 			tokens = appendEndOfLine(tokens)
 
 		case '"':
 			i++
-			start := i
-			for ; i < len(entire); i++ {
-				if entire[i] == '"' {
+			for start := i; i < len(entire); i++ {
+				if entire[i] == '"' || i == len(entire)-1 {
 					tokens = append(tokens,
 						Token{TokenKindText, entire[start:i]})
 					break
 				}
 			}
 
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-':
+			for start := i; i < len(entire); i++ {
+				if !isNumberCharacter(entire[i]) {
+					tokens = append(tokens,
+						Token{TokenKindNumber, entire[start:i]})
+					break
+				}
+
+				if i == len(entire)-1 {
+					tokens = append(tokens,
+						Token{TokenKindNumber, entire[start : i+1]})
+					break
+				}
+			}
+
+			// TODO: Check invalid numbers like 1.2.3
+
 		case ' ', '\t':
-			tokens = appendWord(tokens, &word)
+			// Ignore whitespace.
 
 		default:
-			word += string(entire[i])
+			// Consume a possibly hyphenated word. We have to consume all
+			// characters here because the '-' is ambiguous between numbers and
+			// words.
+			for start := i; i < len(entire); i++ {
+				if !isWordCharacter(entire[i]) {
+					tokens = append(tokens,
+						Token{TokenKindWord, strings.ToLower(entire[start:i])})
+					i--
+					break
+				}
+
+				if i == len(entire)-1 {
+					tokens = append(tokens,
+						Token{TokenKindWord, strings.ToLower(entire[start: i+1])})
+					break
+				}
+			}
 		}
 	}
 
-	tokens = appendWord(tokens, &word)
 	tokens = appendEndOfLine(tokens)
 	tokens = append(tokens, Token{TokenKindEndOfFile, ""})
 
 	return
 }
 
-func appendWord(tokens []Token, word *string) []Token {
-	if *word != "" {
-		token := Token{TokenKindWord, strings.ToLower(*word)}
-		*word = ""
-		return append(tokens, token)
-	}
+func isNumberCharacter(c byte) bool {
+	return (c >= '0' && c <= '9') || c == '.' || c == '-'
+}
 
-	return tokens
+func isWordCharacter(c byte) bool {
+	// TODO: This will not work with unicode characters.
+	return unicode.IsLetter(rune(c)) || unicode.IsDigit(rune(c)) || c == '-'
 }
 
 func appendEndOfLine(tokens []Token) []Token {
