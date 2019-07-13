@@ -1,0 +1,3 @@
+start:
+	declare my-name
+	declare name-length 
