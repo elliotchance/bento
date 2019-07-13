@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"math/big"
 	"os"
 )
 
@@ -64,4 +65,8 @@ func (vm *VirtualMachine) GetArg(index int) interface{} {
 
 func (vm *VirtualMachine) SetArg(index int, value interface{}) {
 	vm.memory[vm.previousOffset+index] = value
+}
+
+func (vm *VirtualMachine) GetNumber(index int) *big.Rat {
+	return vm.memory[vm.previousOffset+index].(*big.Rat)
 }

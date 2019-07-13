@@ -1,5 +1,7 @@
 package main
 
+import "math/big"
+
 type Instruction struct {
 	Call string
 	Args []int
@@ -33,11 +35,18 @@ func CompileFunction(function *Function) *CompiledFunction {
 	// Make spaces for the arguments and locally declared variables. These
 	// placeholders will be nil. The virtual machine will fill in the real
 	// values at the time the function is invoked.
-	for range function.Variables {
-		// TODO: This should work better. I am adding a blank text to prevent a
-		//  nil conversion for uninitialised declares. However, we should ensure
-		//  that declare always sets a default value so these can just be nil.
-		cf.Variables = append(cf.Variables, NewText(""))
+	for _, variable := range function.Variables {
+		var value interface{}
+
+		switch variable.Type {
+		case VariableTypeText:
+			value = NewText("")
+
+		case VariableTypeNumber:
+			value = NewNumber("0")
+		}
+
+		cf.Variables = append(cf.Variables, value)
 	}
 
 	// All of other constants are appended into the end.
@@ -61,7 +70,7 @@ func CompileFunction(function *Function) *CompiledFunction {
 
 				// TODO: handle bad variable name
 
-			case *string:
+			case *string, *big.Rat:
 				instruction.Args = append(instruction.Args, len(cf.Variables))
 				cf.Variables = append(cf.Variables, a)
 

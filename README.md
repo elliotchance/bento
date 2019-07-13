@@ -6,6 +6,8 @@
       * [Sentences](#sentences)
       * [Comments](#comments)
       * [Variables](#variables)
+         * [Text](#text)
+         * [Number](#number)
       * [Functions (Custom Sentences)](#functions-custom-sentences)
    * [Examples](#examples)
       * [Hello, World!](#hello-world)
@@ -102,15 +104,34 @@ display "Hello" # It can also be here
 Variables can be declared with the `declare` keyword:
 
 ```
-declare first-name is text
+declare first-name is <type>
 ```
 
-At the moment, only `text` type is supported.
-
-The default value will be empty, you can set the value with:
+Where `<type>` is `text` or `number`. Each of the these types has a default
+value (described below). However, the variable can be set with:
 
 ```
 set first-name to "Bob"
+```
+
+### Text
+
+Text variables can contain any text, including being empty (zero characters).
+It's perfectly safe to use text variables before they have been given a value,
+the default value will be empty.
+
+### Number
+
+Numbers represent exact numerical figures that have no theoretical size limit,
+but have a fixed precision of 6 decimal places.
+
+Basic mathematical operations are:
+
+```bento
+add a and b into c          # c = a + b
+subtract a from b into c    # c = b - c
+multiply a and b into c     # c = a * b
+divide a and b into c       # c = a / b
 ```
 
 ## Functions (Custom Sentences)

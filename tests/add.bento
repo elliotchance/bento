@@ -1,0 +1,11 @@
+start:
+	declare result is number
+
+	add 1.23 and 7.89 into result
+	display result
+
+	add 234 and 34 into result
+	display result
+
+	add result and -34.3424 into result
+	display result
