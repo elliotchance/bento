@@ -49,45 +49,6 @@ func (parser *Parser) Parse() (*Program, error) {
 	return parser.program, nil
 }
 
-func (parser *Parser) consumeLine() error {
-	// function declaration:
-	//declarationSyntax, vars, err := parser.consumeFunctionDeclaration()
-	//if err == nil {
-	//	parser.currentFunction = declarationSyntax
-	//	parser.program.AppendFunction()
-	//
-	//	continue
-	//}
-
-	// sentence
-	//sentence, args, err := parser.consumeSentenceCall()
-	//if err == nil {
-	//	syntax := sentence.Syntax()
-
-	// Local function.
-	//sentence := parser.program.SentenceForSyntax(syntax, args)
-	//if sentence != nil {
-	//	goto found
-	//}
-	//
-	//// System function.
-	//sentence = System.SentenceForSyntax(syntax, args)
-	//if sentence != nil {
-	//	goto found
-	//}
-
-	//return nil, fmt.Errorf("cannot understand: %s", syntax)
-
-	//found:
-	//	parser.program.Functions[parser.currentFunction].Sentences = append(
-	//		parser.program.Functions[parser.currentFunction].Sentences,
-	//		sentence)
-	//	continue
-	//}
-
-	return fmt.Errorf("unexpected %s", parser.tokens[parser.offset])
-}
-
 func (parser *Parser) consumeToken(kind string) (Token, error) {
 	if parser.offset >= len(parser.tokens) {
 		return Token{},
@@ -150,7 +111,7 @@ func (parser *Parser) consumeWord() (string, error) {
 func (parser *Parser) consumeType() (string, error) {
 	ty, err := parser.consumeWord()
 
-	if ty != VariableTypeText {
+	if ty != VariableTypeText && ty != VariableTypeNumber {
 		return "", fmt.Errorf("expected variable type, but got %s", ty)
 	}
 
@@ -213,7 +174,9 @@ func (parser *Parser) consumeVariableIsTypeList() (list map[string]string, err e
 }
 
 func (parser *Parser) consumeSentenceWords(varMap map[string]*VariableDefinition) ([]interface{}, error) {
-	tokens := parser.consumeTokens([]string{TokenKindWord, TokenKindText})
+	tokens := parser.consumeTokens([]string{
+		TokenKindWord, TokenKindText, TokenKindNumber,
+	})
 	if len(tokens) == 0 {
 		return nil, fmt.Errorf("expected sentence, but found something else")
 	}
@@ -230,6 +193,9 @@ func (parser *Parser) consumeSentenceWords(varMap map[string]*VariableDefinition
 
 		case TokenKindText:
 			words = append(words, NewText(token.Value))
+
+		case TokenKindNumber:
+			words = append(words, NewNumber(token.Value))
 		}
 	}
 

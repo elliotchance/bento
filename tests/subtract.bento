@@ -1,0 +1,11 @@
+start:
+	declare result is number
+
+	subtract 1.23 from 7.89 into result
+	display result
+
+	subtract 234 from 34 into result
+	display result
+
+	subtract result from -34.3424 into result
+	display result

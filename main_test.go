@@ -16,6 +16,12 @@ func TestBentoFiles(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, fileInfo := range fileInfos {
+		// This is useful for debugging a single file, so i'll leave it
+		// commented out.
+		//if fileInfo.Name() != "number.bento" {
+		//	continue
+		//}
+
 		if !strings.HasSuffix(fileInfo.Name(), ".bento") {
 			continue
 		}

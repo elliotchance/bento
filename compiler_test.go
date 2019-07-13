@@ -4,6 +4,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
+	"math/big"
 	"testing"
 )
 
@@ -272,6 +273,43 @@ var compileTests = map[string]struct {
 			},
 		},
 	},
+	"NumberVariable": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"start": {
+					Definition: &Sentence{Tokens: []interface{}{"start"}},
+					Variables: []*VariableDefinition{
+						{
+							Name: "num",
+							Type: "number",
+						},
+					},
+					Sentences: []*Sentence{
+						{
+							Tokens: []interface{}{
+								"display", VariableReference("num"),
+							},
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewNumber("0"),
+					},
+					Instructions: []Instruction{
+						{
+							Call: "display ?",
+							Args: []int{0},
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 func TestCompileProgram(t *testing.T) {
@@ -280,7 +318,12 @@ func TestCompileProgram(t *testing.T) {
 			cf := CompileProgram(test.program)
 
 			diff := cmp.Diff(test.expected, cf,
-				cmpopts.IgnoreTypes((func([]interface{}))(nil)))
+				cmpopts.IgnoreTypes((func([]interface{}))(nil)),
+				cmpopts.AcyclicTransformer("NumberToString",
+					func(number *big.Rat) string {
+						return number.FloatString(6)
+					}))
+
 			assert.Empty(t, diff)
 		})
 	}

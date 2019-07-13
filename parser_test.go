@@ -2,8 +2,10 @@ package main
 
 import (
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"math/big"
 	"strings"
 	"testing"
 )
@@ -248,13 +250,59 @@ func TestParser_Parse(t *testing.T) {
 				},
 			},
 		},
+		"DeclareNumber": {
+			bento: "start: declare foo is number",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Tokens: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "foo",
+								Type:       "number",
+								LocalScope: true,
+							},
+						},
+					},
+				},
+			},
+		},
+		"SetNegativeNumber": {
+			bento: "start: declare foo is number\nset foo to -1.23",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Tokens: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "foo",
+								Type:       "number",
+								LocalScope: true,
+							},
+						},
+						Sentences: []*Sentence{
+							{
+								Tokens: []interface{}{
+									"set", VariableReference("foo"), "to", NewNumber("-1.23"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
 			parser := NewParser(strings.NewReader(test.bento))
 			actual, err := parser.Parse()
 			require.NoError(t, err)
 
-			diff := cmp.Diff(test.expected, actual)
+			diff := cmp.Diff(test.expected, actual,
+				cmpopts.AcyclicTransformer("NumberToString",
+					func(number *big.Rat) string {
+						return number.FloatString(6)
+					}))
+
 			assert.Empty(t, diff)
 		})
 	}

@@ -65,6 +65,46 @@ var vmTests = map[string]struct {
 			NewText("Bob"), NewText("hi"), // print ?
 		},
 	},
+	"SetText": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText(""), NewText("foo"),
+					},
+					Instructions: []Instruction{
+						{
+							Call: "set ? to ?",
+							Args: []int{0, 1},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewText("foo"), NewText("foo"), // start
+		},
+	},
+	"SetNumber": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewNumber("0"), NewNumber("1.23"),
+					},
+					Instructions: []Instruction{
+						{
+							Call: "set ? to ?",
+							Args: []int{0, 1},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewNumber("1.23"), NewNumber("1.23"), // start
+		},
+	},
 }
 
 func TestVirtualMachine_Run(t *testing.T) {
