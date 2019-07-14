@@ -2,6 +2,11 @@ language: go
 
 go: "1.12.x"
 
+stages:
+  - Test
+  - name: Release
+    if: tag =~ ^v
+
 env:
   global:
     # This is only needed until Go 1.13 when it will be the default.
@@ -13,3 +18,24 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+jobs:
+  include:
+    - stage: Release
+      script:
+        - GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bento && zip bento-linux.zip bento
+        - GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bento && zip bento-mac.zip bento
+        - GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bento.exe && zip bento-windows.zip bento.exe
+
+      deploy:
+        provider: releases
+        api_key:
+          secure: "TIQmDVN5PqMlSAk5pEb0pOhoUEMRkHRcTtdOATxFMqwL2GG70nzsU/e3jzXxK7KEo+sSRTXUW7tlLZVZaopChPPvGYKj1rSaamdLaS8IcLQfafsP0A7dmLSpXdiHEHxXzZsqsd3rzNZIjCdxv7iFbe6wU9nivB6wpTqlt8kdGiO6qlm33VyfVgF3GBV/4U4C/y8Ef0OAnX14+a2zii4Enq0nKWFuvQ3p+2DXU/KZShZnnplOokCwigyyPL2/jltoewUQDsDuNi5V2ugR3E3iixCIM5epPsWNJ8uK3DVO1ZpWpQt/n0IDirK2ElTMUcNwio0X/SF3C6GdI1VgAUzBuVnjrHbDy/7lfmM1R1+1SzLSn6vhd8/OIMXsp9eAgAI9WLxTgPL6O1cZbQUN6EduapR8tMmx6PQuFf10CjhaRQIuIGYBtsbT0aoaMdj4jLUHBn4Y5968tS2tv9LLP2bcleDJd+We6kRqY5P48eD/9dwa88CfVKCO0SBQbiAkiD23jDf2boPfbic4wBbxd04tGbboQsPr/XOlLa2nIh6PY1bxkNNdBfQM1guWDzdjM2nseUPQIe672QUc4X0gKEMzbOUF+zlEA1caxBiWIcW2PiDNTqDDBqgwIbZnnFbXwUcf3SrAemsUCCjjnNVi9Jk/qBXAgO8FjAKMo/jNJ8nesCM="
+        skip_cleanup: true
+        file:
+          - bento-linux.zip
+          - bento-mac.zip
+          - bento-windows.zip
+        on:
+          repo: elliotchance/bento
+          all_branches: true
