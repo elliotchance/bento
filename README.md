@@ -1,5 +1,8 @@
 # 🍱 bento
 
+   * [Getting Started](#getting-started)
+      * [Installation](#installation)
+      * [Running A Program](#running-a-program)
    * [Example Use Case](#example-use-case)
    * [Language](#language)
       * [File Structure](#file-structure)
@@ -35,6 +38,30 @@ exposed through a set of specific DSLs called "sentences".
 non-technical people would find difficult to understand. The language only
 contains a handful of special words required for control flow. Whitespace and
 capitalization do not matter.
+
+# Getting Started
+
+## Installation
+
+Bento is available for Mac, Windows and Linux. You can download the latest
+release from the [Releases](https://github.com/elliotchance/bento/releases)
+page.
+
+## Running A Program
+
+Create a file called `hello-world.bento` with the contents:
+
+```bento
+start:
+	display "Hello, World!"
+```
+
+Then run this file with (you may need to replace the path to the file if you are
+not in the same directory as the file):
+
+```bash
+bento hello-world.bento
+```
 
 # Example Use Case
 
