@@ -1,0 +1,10 @@
+hi
+sh: nosuchcommand: command not found
+---1
+hello
+
+---2
+127.000000
+---3
+
+52.000000
