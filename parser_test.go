@@ -26,7 +26,7 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"start": {
-						Definition: &Sentence{Tokens: []interface{}{"start"}},
+						Definition: &Sentence{Words: []interface{}{"start"}},
 					},
 				},
 			},
@@ -36,10 +36,10 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"start": {
-						Definition: &Sentence{Tokens: []interface{}{"start"}},
-						Sentences: []*Sentence{
-							{
-								Tokens: []interface{}{
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
 									"display", NewText("Hello, World!"),
 								},
 							},
@@ -53,10 +53,10 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"start": {
-						Definition: &Sentence{Tokens: []interface{}{"start"}},
-						Sentences: []*Sentence{
-							{
-								Tokens: []interface{}{
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
 									"display", NewText("Hello, World!"),
 								},
 							},
@@ -70,15 +70,15 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"start": {
-						Definition: &Sentence{Tokens: []interface{}{"start"}},
-						Sentences: []*Sentence{
-							{
-								Tokens: []interface{}{
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
 									"display", NewText("hello"),
 								},
 							},
-							{
-								Tokens: []interface{}{
+							&Sentence{
+								Words: []interface{}{
 									"display", NewText("twice!"),
 								},
 							},
@@ -92,7 +92,7 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"start": {
-						Definition: &Sentence{Tokens: []interface{}{"start"}},
+						Definition: &Sentence{Words: []interface{}{"start"}},
 						Variables: []*VariableDefinition{
 							{
 								Name:       "some-variable",
@@ -109,7 +109,7 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"start": {
-						Definition: &Sentence{Tokens: []interface{}{"start"}},
+						Definition: &Sentence{Words: []interface{}{"start"}},
 						Variables: []*VariableDefinition{
 							{
 								Name:       "foo",
@@ -117,9 +117,9 @@ func TestParser_Parse(t *testing.T) {
 								LocalScope: true,
 							},
 						},
-						Sentences: []*Sentence{
-							{
-								Tokens: []interface{}{
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
 									"display", VariableReference("foo"),
 								},
 							},
@@ -133,20 +133,20 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"start": {
-						Definition: &Sentence{Tokens: []interface{}{"start"}},
-						Sentences: []*Sentence{
-							{
-								Tokens: []interface{}{
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
 									"display", NewText("hi"),
 								},
 							},
 						},
 					},
 					"do something": {
-						Definition: &Sentence{Tokens: []interface{}{"do", "something"}},
-						Sentences: []*Sentence{
-							{
-								Tokens: []interface{}{
+						Definition: &Sentence{Words: []interface{}{"do", "something"}},
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
 									"display", NewText("ok"),
 								},
 							},
@@ -160,20 +160,20 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"start": {
-						Definition: &Sentence{Tokens: []interface{}{"start"}},
-						Sentences: []*Sentence{
-							{
-								Tokens: []interface{}{
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
 									"do", "something",
 								},
 							},
 						},
 					},
 					"do something": {
-						Definition: &Sentence{Tokens: []interface{}{"do", "something"}},
-						Sentences: []*Sentence{
-							{
-								Tokens: []interface{}{
+						Definition: &Sentence{Words: []interface{}{"do", "something"}},
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
 									"display", NewText("ok"),
 								},
 							},
@@ -187,7 +187,7 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"greet ? now": {
-						Definition: &Sentence{Tokens: []interface{}{"greet", VariableReference("persons-name"), "now"}},
+						Definition: &Sentence{Words: []interface{}{"greet", VariableReference("persons-name"), "now"}},
 						Variables: []*VariableDefinition{
 							{
 								Name:       "persons-name",
@@ -204,7 +204,7 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"greet ? now": {
-						Definition: &Sentence{Tokens: []interface{}{"greet", VariableReference("persons-name"), "now"}},
+						Definition: &Sentence{Words: []interface{}{"greet", VariableReference("persons-name"), "now"}},
 						Variables: []*VariableDefinition{
 							{
 								Name:       "persons-name",
@@ -212,9 +212,9 @@ func TestParser_Parse(t *testing.T) {
 								LocalScope: false,
 							},
 						},
-						Sentences: []*Sentence{
-							{
-								Tokens: []interface{}{
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
 									"display", VariableReference("persons-name"),
 								},
 							},
@@ -228,7 +228,7 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"say ? to ?": {
-						Definition: &Sentence{Tokens: []interface{}{
+						Definition: &Sentence{Words: []interface{}{
 							"say",
 							VariableReference("greeting"),
 							"to",
@@ -255,7 +255,7 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"start": {
-						Definition: &Sentence{Tokens: []interface{}{"start"}},
+						Definition: &Sentence{Words: []interface{}{"start"}},
 						Variables: []*VariableDefinition{
 							{
 								Name:       "foo",
@@ -272,7 +272,7 @@ func TestParser_Parse(t *testing.T) {
 			expected: &Program{
 				Functions: map[string]*Function{
 					"start": {
-						Definition: &Sentence{Tokens: []interface{}{"start"}},
+						Definition: &Sentence{Words: []interface{}{"start"}},
 						Variables: []*VariableDefinition{
 							{
 								Name:       "foo",
@@ -280,10 +280,87 @@ func TestParser_Parse(t *testing.T) {
 								LocalScope: true,
 							},
 						},
-						Sentences: []*Sentence{
-							{
-								Tokens: []interface{}{
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
 									"set", VariableReference("foo"), "to", NewNumber("-1.23"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"InlineIf": {
+			bento: "start: declare foo is text\nif foo = \"qux\", quux 1.234\ncorge",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "foo",
+								Type:       "text",
+								LocalScope: true,
+							},
+						},
+						Statements: []Statement{
+							&If{
+								Condition: &Condition{
+									Left:     VariableReference("foo"),
+									Right:    NewText("qux"),
+									Operator: OperatorEqual,
+								},
+								True: &Sentence{
+									Words: []interface{}{
+										"quux", NewNumber("1.234"),
+									},
+								},
+							},
+							&Sentence{
+								Words: []interface{}{
+									"corge",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"InlineIfElse": {
+			bento: "start: declare foo is text\nif foo = \"qux\", quux 1.234, otherwise corge\ndisplay",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "foo",
+								Type:       "text",
+								LocalScope: true,
+							},
+						},
+						Statements: []Statement{
+							&If{
+								Condition: &Condition{
+									Left:     VariableReference("foo"),
+									Right:    NewText("qux"),
+									Operator: OperatorEqual,
+								},
+								True: &Sentence{
+									Words: []interface{}{
+										"quux", NewNumber("1.234"),
+									},
+								},
+								False: &Sentence{
+									Words: []interface{}{
+										"corge",
+									},
+								},
+							},
+							&Sentence{
+								Words: []interface{}{
+									"display",
 								},
 							},
 						},

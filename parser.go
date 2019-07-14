@@ -9,7 +9,9 @@ import (
 // These reserved words have special meaning when they are the first word of the
 // sentence. It's fine to include them as normal words inside a sentence.
 const (
-	WordDeclare = "declare"
+	WordDeclare   = "declare"
+	WordIf        = "if"
+	WordOtherwise = "otherwise"
 )
 
 type Parser struct {
@@ -108,6 +110,37 @@ func (parser *Parser) consumeWord() (string, error) {
 	return token.Value, err
 }
 
+func (parser *Parser) consumeSentenceWord(varMap map[string]*VariableDefinition) (_ interface{}, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	var token Token
+	token, err = parser.consumeToken(TokenKindWord)
+	if err == nil {
+		if _, ok := varMap[token.Value]; ok {
+			return VariableReference(token.Value), nil
+		} else {
+			return token.Value, nil
+		}
+	}
+
+	token, err = parser.consumeToken(TokenKindText)
+	if err == nil {
+		return NewText(token.Value), nil
+	}
+
+	token, err = parser.consumeToken(TokenKindNumber)
+	if err == nil {
+		return NewNumber(token.Value), nil
+	}
+
+	return nil, fmt.Errorf("expected sentence word, but found something else")
+}
+
 func (parser *Parser) consumeType() (string, error) {
 	ty, err := parser.consumeWord()
 
@@ -173,36 +206,7 @@ func (parser *Parser) consumeVariableIsTypeList() (list map[string]string, err e
 	return
 }
 
-func (parser *Parser) consumeSentenceWords(varMap map[string]*VariableDefinition) ([]interface{}, error) {
-	tokens := parser.consumeTokens([]string{
-		TokenKindWord, TokenKindText, TokenKindNumber,
-	})
-	if len(tokens) == 0 {
-		return nil, fmt.Errorf("expected sentence, but found something else")
-	}
-
-	var words []interface{}
-	for _, token := range tokens {
-		switch token.Kind {
-		case TokenKindWord:
-			if _, ok := varMap[token.Value]; ok {
-				words = append(words, VariableReference(token.Value))
-			} else {
-				words = append(words, token.Value)
-			}
-
-		case TokenKindText:
-			words = append(words, NewText(token.Value))
-
-		case TokenKindNumber:
-			words = append(words, NewNumber(token.Value))
-		}
-	}
-
-	return words, nil
-}
-
-func (parser *Parser) consumeSentenceCall(varMap map[string]*VariableDefinition) (tokens []interface{}, err error) {
+func (parser *Parser) consumeSentence(varMap map[string]*VariableDefinition) (sentence *Sentence, err error) {
 	originalOffset := parser.offset
 	defer func() {
 		if err != nil {
@@ -210,17 +214,39 @@ func (parser *Parser) consumeSentenceCall(varMap map[string]*VariableDefinition)
 		}
 	}()
 
-	words, err := parser.consumeSentenceWords(varMap)
+	sentence = new(Sentence)
+
+	for !parser.isFinished() {
+		word, err := parser.consumeSentenceWord(varMap)
+		if err != nil {
+			break
+		}
+
+		sentence.Words = append(sentence.Words, word)
+	}
+
+	return
+}
+
+func (parser *Parser) consumeSentenceCall(varMap map[string]*VariableDefinition) (sentence *Sentence, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	sentence, err = parser.consumeSentence(varMap)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	_, err = parser.consumeToken(TokenKindEndOfLine)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	return words, nil
+	return
 }
 
 func (parser *Parser) consumeFunction() (function *Function, err error) {
@@ -244,11 +270,18 @@ func (parser *Parser) consumeFunction() (function *Function, err error) {
 			continue
 		}
 
-		// Normal sentence.
-		var words []interface{}
-		words, err = parser.consumeSentenceCall(function.VariableMap())
+		// if ...
+		ifStmt, err := parser.consumeIf(function.VariableMap())
 		if err == nil {
-			function.AppendSentence(words)
+			function.AppendStatement(ifStmt)
+			continue
+		}
+
+		// Normal sentence.
+		var sentence *Sentence
+		sentence, err = parser.consumeSentenceCall(function.VariableMap())
+		if err == nil {
+			function.AppendStatement(sentence)
 			continue
 		}
 
@@ -266,16 +299,14 @@ func (parser *Parser) consumeFunctionDeclaration() (function *Function, err erro
 		}
 	}()
 
-	var words []interface{}
-	words, err = parser.consumeSentenceWords(nil)
+	var sentence *Sentence
+	sentence, err = parser.consumeSentence(nil)
 	if err != nil {
 		return
 	}
 
 	function = &Function{
-		Definition: &Sentence{
-			Tokens: words,
-		},
+		Definition: sentence,
 	}
 
 	_, err = parser.consumeToken(TokenKindOpenBracket)
@@ -290,9 +321,9 @@ func (parser *Parser) consumeFunctionDeclaration() (function *Function, err erro
 			return nil, err
 		}
 
-		for i, word := range function.Definition.Tokens {
+		for i, word := range function.Definition.Words {
 			if ty, ok := vars[word.(string)]; ok {
-				function.Definition.Tokens[i] = VariableReference(word.(string))
+				function.Definition.Words[i] = VariableReference(word.(string))
 
 				// Note: It's important that we add the arguments in the order
 				// that they appear rather than the order that they are defined.
@@ -321,6 +352,7 @@ func (parser *Parser) lineIsFinished() bool {
 }
 
 func (parser *Parser) consumeDeclare() (name, ty string, err error) {
+	// TODO: Can these be made easier?
 	originalOffset := parser.offset
 	defer func() {
 		if err != nil {
@@ -344,4 +376,103 @@ func (parser *Parser) consumeDeclare() (name, ty string, err error) {
 	}
 
 	return name, ty, nil
+}
+
+func (parser *Parser) consumeIf(varMap map[string]*VariableDefinition) (ifStmt *If, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	ifStmt = &If{}
+
+	_, err = parser.consumeSpecificWord(WordIf)
+	if err != nil {
+		return
+	}
+
+	// TODO: If we hit and if, we must not allow it to process the line as a
+	//  sentence.
+
+	ifStmt.Condition, err = parser.consumeCondition(varMap)
+	if err != nil {
+		return
+	}
+
+	_, err = parser.consumeToken(TokenKindComma)
+	if err != nil {
+		return
+	}
+
+	ifStmt.True, err = parser.consumeSentence(varMap)
+	if err != nil {
+		return
+	}
+
+	// Bail out if safely if there is no "otherwise".
+	_, err = parser.consumeToken(TokenKindEndOfLine)
+	if err == nil {
+		return
+	}
+
+	_, err = parser.consumeToken(TokenKindComma)
+	if err != nil {
+		return
+	}
+
+	_, err = parser.consumeSpecificWord(WordOtherwise)
+	if err != nil {
+		return
+	}
+
+	ifStmt.False, err = parser.consumeSentence(varMap)
+	if err != nil {
+		return
+	}
+
+	_, err = parser.consumeToken(TokenKindEndOfLine)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (parser *Parser) consumeCondition(varMap map[string]*VariableDefinition) (condition *Condition, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	condition = &Condition{}
+
+	condition.Left, err = parser.consumeSentenceWord(varMap)
+	if err != nil {
+		return nil, err
+	}
+
+	condition.Operator, err = parser.consumeOperator()
+	if err != nil {
+		return nil, err
+	}
+
+	condition.Right, err = parser.consumeSentenceWord(varMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return condition, nil
+}
+
+func (parser *Parser) consumeOperator() (string, error) {
+	operatorToken, err := parser.consumeToken(TokenKindOperator)
+	if err != nil {
+		return "", err
+	}
+
+	return operatorToken.Value, nil
 }

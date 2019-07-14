@@ -1,0 +1,12 @@
+start:
+	declare my-name is text
+
+	if my-name = "Elliot", display "Hi!", otherwise display "Hello?"
+
+	set my-name to "Bob"
+
+	if my-name = "Bob", display "Hi Bob!"
+
+	if my-name != "John", set my-name to "John"
+
+	if my-name != "John", display "oops!", otherwise display "All good."

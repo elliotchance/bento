@@ -5,6 +5,17 @@ package main
 
 import "strings"
 
+const (
+	OperatorEqual            = "="
+	OperatorNotEqual         = "!="
+	OperatorGreaterThan      = ">"
+	OperatorGreaterThanEqual = ">="
+	OperatorLessThan         = "<"
+	OperatorLessThanEqual    = "<="
+)
+
+type Statement interface{}
+
 // Program is the result of root-level AST after parsing the source code.
 //
 // The program may not be valid. It has to be compiled before it can be
@@ -24,7 +35,7 @@ type Function struct {
 	// Variables inclues the arguments and locally declared variables.
 	Variables []*VariableDefinition
 
-	Sentences []*Sentence
+	Statements []Statement
 }
 
 func (fn *Function) VariableMap() map[string]*VariableDefinition {
@@ -53,20 +64,20 @@ func (fn *Function) AppendDeclare(name, ty string) {
 	})
 }
 
-func (fn *Function) AppendSentence(tokens []interface{}) {
-	fn.Sentences = append(fn.Sentences, &Sentence{Tokens: tokens})
+func (fn *Function) AppendStatement(statement Statement) {
+	fn.Statements = append(fn.Statements, statement)
 }
 
 // Sentence is part of the AST. A sentence may not yet exist, or be valid.
 type Sentence struct {
-	Tokens []interface{}
+	Words []interface{}
 }
 
 // Syntax like "add ? to ?"
 func (sentence *Sentence) Syntax() string {
 	var words []string
 
-	for _, word := range sentence.Tokens {
+	for _, word := range sentence.Words {
 		if s, ok := word.(string); ok {
 			words = append(words, s)
 		} else {
@@ -79,11 +90,21 @@ func (sentence *Sentence) Syntax() string {
 
 // Each of the values of the placeholders.
 func (sentence *Sentence) Args() (args []interface{}) {
-	for _, word := range sentence.Tokens {
+	for _, word := range sentence.Words {
 		if _, ok := word.(string); !ok {
 			args = append(args, word)
 		}
 	}
 
 	return
+}
+
+type Condition struct {
+	Left, Right interface{}
+	Operator    string
+}
+
+type If struct {
+	Condition   *Condition
+	True, False *Sentence
 }

@@ -11,7 +11,7 @@ var sentenceTests = map[string]struct {
 }{
 	"Display": {
 		sentence: &Sentence{
-			Tokens: []interface{}{
+			Words: []interface{}{
 				"display", NewText("hello"),
 			},
 		},

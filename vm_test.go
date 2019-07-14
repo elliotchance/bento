@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"strings"
 	"testing"
 )
 
 var vmTests = map[string]struct {
 	program        *CompiledProgram
 	expectedMemory []interface{}
+	expectedOutput string
 }{
 	"Simple": {
 		program: &CompiledProgram{
@@ -17,7 +21,7 @@ var vmTests = map[string]struct {
 						NewText("hello"),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "display ?",
 							Args: []int{0},
 						},
@@ -28,6 +32,7 @@ var vmTests = map[string]struct {
 		expectedMemory: []interface{}{
 			NewText("hello"),
 		},
+		expectedOutput: "hello\n",
 	},
 	"Call1": {
 		program: &CompiledProgram{
@@ -37,7 +42,7 @@ var vmTests = map[string]struct {
 						NewText("Bob"),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "print ?",
 							Args: []int{0},
 						},
@@ -48,11 +53,11 @@ var vmTests = map[string]struct {
 						nil, NewText("hi"),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "display ?",
 							Args: []int{1},
 						},
-						{
+						&CallInstruction{
 							Call: "display ?",
 							Args: []int{0},
 						},
@@ -64,6 +69,7 @@ var vmTests = map[string]struct {
 			NewText("Bob"),                // start
 			NewText("Bob"), NewText("hi"), // print ?
 		},
+		expectedOutput: "hi\nBob\n",
 	},
 	"SetText": {
 		program: &CompiledProgram{
@@ -73,7 +79,7 @@ var vmTests = map[string]struct {
 						NewText(""), NewText("foo"),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "set ? to ?",
 							Args: []int{0, 1},
 						},
@@ -93,7 +99,7 @@ var vmTests = map[string]struct {
 						NewNumber("0"), NewNumber("1.23"),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "set ? to ?",
 							Args: []int{0, 1},
 						},
@@ -105,14 +111,197 @@ var vmTests = map[string]struct {
 			NewNumber("1.23"), NewNumber("1.23"), // start
 		},
 	},
+	"InlineIfTrue": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("foo"), NewText("foo"), NewText("match!"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorEqual,
+							True:     1,
+							False:    2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{2},
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewText("foo"), NewText("foo"), NewText("match!"), NewText("done"), // start
+		},
+		expectedOutput: "match!\ndone\n",
+	},
+	"InlineIfFalse": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("foo"), NewText("bar"), NewText("match!"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorEqual,
+							True:     1,
+							False:    2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{2},
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewText("foo"), NewText("bar"), NewText("match!"), NewText("done"), // start
+		},
+		expectedOutput: "done\n",
+	},
+	"InlineIfElseTrue": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("foo"), NewText("foo"), NewText("match!"), NewText("no match!"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorEqual,
+							True:     1,
+							False:    2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{2},
+						},
+						&JumpInstruction{
+							Forward: 2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{4},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewText("foo"), NewText("foo"), NewText("match!"), NewText("no match!"), NewText("done"), // start
+		},
+		expectedOutput: "match!\ndone\n",
+	},
+}
+
+var vmConditionTests = map[string]interface{}{
+	`"foo" = "foo"`: true, // text
+	`"foo" = "bar"`: false,
+	`1.230 = 1.23`:  true, // number
+	`1.23 = 2.23`:   false,
+	`1.23 = "1.23"`: "cannot compare: number = text", // mixed
+	`"1.23" = 1.23`: "cannot compare: text = number",
+
+	`"foo" != "foo"`: false, // text
+	`"foo" != "bar"`: true,
+	`1.230 != 1.23`:  false, // number
+	`1.23 != 2.23`:   true,
+	`1.23 != "1.23"`: "cannot compare: number != text", // mixed
+	`"1.23" != 1.23`: "cannot compare: text != number",
+
+	`"foo" < "foo"`: false, // text
+	`"foo" < "bar"`: false,
+	`1.230 < 1.23`:  false, // number
+	`1.23 < 2.23`:   true,
+	`1.23 < "1.23"`: "cannot compare: number < text", // mixed
+	`"1.23" < 1.23`: "cannot compare: text < number",
+
+	`"foo" <= "foo"`: true, // text
+	`"foo" <= "bar"`: false,
+	`1.230 <= 1.23`:  true, // number
+	`1.23 <= 2.23`:   true,
+	`1.23 <= "1.23"`: "cannot compare: number <= text", // mixed
+	`"1.23" <= 1.23`: "cannot compare: text <= number",
+
+	`"foo" > "foo"`: false, // text
+	`"foo" > "bar"`: true,
+	`1.230 > 1.23`:  false, // number
+	`1.23 > 2.23`:   false,
+	`1.23 > "1.23"`: "cannot compare: number > text", // mixed
+	`"1.23" > 1.23`: "cannot compare: text > number",
+
+	`"foo" >= "foo"`: true, // text
+	`"foo" >= "bar"`: true,
+	`1.230 >= 1.23`:  true, // number
+	`1.23 >= 2.23`:   false,
+	`1.23 >= "1.23"`: "cannot compare: number >= text", // mixed
+	`"1.23" >= 1.23`: "cannot compare: text >= number",
 }
 
 func TestVirtualMachine_Run(t *testing.T) {
 	for testName, test := range vmTests {
 		t.Run(testName, func(t *testing.T) {
 			vm := NewVirtualMachine(test.program)
-			vm.Run()
+			vm.out = bytes.NewBuffer(nil)
+
+			err := vm.Run()
+			require.NoError(t, err)
+
 			assert.Equal(t, test.expectedMemory, vm.memory)
+			assert.Equal(t, test.expectedOutput, vm.out.(*bytes.Buffer).String())
+		})
+	}
+}
+
+func TestVirtualMachine_ConditionTests(t *testing.T) {
+	for test, expected := range vmConditionTests {
+		t.Run(test, func(t *testing.T) {
+			parser := NewParser(strings.NewReader(
+				"start: if " + test + ", display \"yes\"",
+			))
+			program, err := parser.Parse()
+			require.NoError(t, err)
+
+			compiledProgram := CompileProgram(program)
+
+			vm := NewVirtualMachine(compiledProgram)
+			vm.out = bytes.NewBuffer(nil)
+			err = vm.Run()
+
+			switch expected {
+			case true:
+				assert.Equal(t, "yes\n", vm.out.(*bytes.Buffer).String())
+				assert.NoError(t, err)
+
+			case false:
+				assert.Equal(t, "", vm.out.(*bytes.Buffer).String())
+				assert.NoError(t, err)
+
+			default:
+				assert.EqualError(t, err, expected.(string))
+			}
 		})
 	}
 }

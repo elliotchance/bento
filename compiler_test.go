@@ -16,10 +16,10 @@ var compileTests = map[string]struct {
 		program: &Program{
 			Functions: map[string]*Function{
 				"start": {
-					Definition: &Sentence{Tokens: []interface{}{"start"}},
-					Sentences: []*Sentence{
-						{
-							Tokens: []interface{}{
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
 								"display", NewText("hello"),
 							},
 						},
@@ -34,7 +34,7 @@ var compileTests = map[string]struct {
 						NewText("hello"),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "display ?",
 							Args: []int{0},
 						},
@@ -47,16 +47,16 @@ var compileTests = map[string]struct {
 		program: &Program{
 			Functions: map[string]*Function{
 				"start": {
-					Definition: &Sentence{Tokens: []interface{}{"start"}},
+					Definition: &Sentence{Words: []interface{}{"start"}},
 					Variables: []*VariableDefinition{
 						{
 							Name: "name",
 							Type: "text",
 						},
 					},
-					Sentences: []*Sentence{
-						{
-							Tokens: []interface{}{
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
 								"display", VariableReference("name"),
 							},
 						},
@@ -71,7 +71,7 @@ var compileTests = map[string]struct {
 						NewText(""),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "display ?",
 							Args: []int{0},
 						},
@@ -84,7 +84,7 @@ var compileTests = map[string]struct {
 		program: &Program{
 			Functions: map[string]*Function{
 				"start": {
-					Definition: &Sentence{Tokens: []interface{}{"start"}},
+					Definition: &Sentence{Words: []interface{}{"start"}},
 					Variables: []*VariableDefinition{
 						{
 							Name:       "name",
@@ -92,9 +92,9 @@ var compileTests = map[string]struct {
 							LocalScope: true,
 						},
 					},
-					Sentences: []*Sentence{
-						{
-							Tokens: []interface{}{
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
 								"display", NewText("hi"),
 							},
 						},
@@ -109,7 +109,7 @@ var compileTests = map[string]struct {
 						NewText(""), NewText("hi"),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "display ?",
 							Args: []int{1},
 						},
@@ -122,7 +122,7 @@ var compileTests = map[string]struct {
 		program: &Program{
 			Functions: map[string]*Function{
 				"start": {
-					Definition: &Sentence{Tokens: []interface{}{"start"}},
+					Definition: &Sentence{Words: []interface{}{"start"}},
 					Variables: []*VariableDefinition{
 						{
 							Name:       "name",
@@ -130,14 +130,14 @@ var compileTests = map[string]struct {
 							LocalScope: true,
 						},
 					},
-					Sentences: []*Sentence{
-						{
-							Tokens: []interface{}{
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
 								"display", NewText("hi"),
 							},
 						},
-						{
-							Tokens: []interface{}{
+						&Sentence{
+							Words: []interface{}{
 								"set", NewText("foo"), "to", VariableReference("name"),
 							},
 						},
@@ -152,11 +152,11 @@ var compileTests = map[string]struct {
 						NewText(""), NewText("hi"), NewText("foo"),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "display ?",
 							Args: []int{1},
 						},
-						{
+						&CallInstruction{
 							Call: "set ? to ?",
 							Args: []int{2, 0},
 						},
@@ -169,20 +169,20 @@ var compileTests = map[string]struct {
 		program: &Program{
 			Functions: map[string]*Function{
 				"start": {
-					Definition: &Sentence{Tokens: []interface{}{"start"}},
-					Sentences: []*Sentence{
-						{
-							Tokens: []interface{}{
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
 								"print",
 							},
 						},
 					},
 				},
 				"print": {
-					Definition: &Sentence{Tokens: []interface{}{"print"}},
-					Sentences: []*Sentence{
-						{
-							Tokens: []interface{}{
+					Definition: &Sentence{Words: []interface{}{"print"}},
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
 								"display", NewText("hi"),
 							},
 						},
@@ -194,7 +194,7 @@ var compileTests = map[string]struct {
 			Functions: map[string]*CompiledFunction{
 				"start": {
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "print",
 						},
 					},
@@ -204,7 +204,7 @@ var compileTests = map[string]struct {
 						NewText("hi"),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "display ?",
 							Args: []int{0},
 						},
@@ -217,17 +217,17 @@ var compileTests = map[string]struct {
 		program: &Program{
 			Functions: map[string]*Function{
 				"start": {
-					Definition: &Sentence{Tokens: []interface{}{"start"}},
-					Sentences: []*Sentence{
-						{
-							Tokens: []interface{}{
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
 								"print", NewText("foo"),
 							},
 						},
 					},
 				},
 				"print ?": {
-					Definition: &Sentence{Tokens: []interface{}{
+					Definition: &Sentence{Words: []interface{}{
 						"print", VariableReference("message"),
 					}},
 					Variables: []*VariableDefinition{
@@ -236,9 +236,9 @@ var compileTests = map[string]struct {
 							Type: "text",
 						},
 					},
-					Sentences: []*Sentence{
-						{
-							Tokens: []interface{}{
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
 								"display", VariableReference("message"),
 							},
 						},
@@ -253,7 +253,7 @@ var compileTests = map[string]struct {
 						NewText("foo"),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "print ?",
 							Args: []int{0},
 						},
@@ -264,7 +264,7 @@ var compileTests = map[string]struct {
 						NewText(""),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "display ?",
 							Args: []int{0},
 						},
@@ -277,16 +277,16 @@ var compileTests = map[string]struct {
 		program: &Program{
 			Functions: map[string]*Function{
 				"start": {
-					Definition: &Sentence{Tokens: []interface{}{"start"}},
+					Definition: &Sentence{Words: []interface{}{"start"}},
 					Variables: []*VariableDefinition{
 						{
 							Name: "num",
 							Type: "number",
 						},
 					},
-					Sentences: []*Sentence{
-						{
-							Tokens: []interface{}{
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
 								"display", VariableReference("num"),
 							},
 						},
@@ -301,9 +301,129 @@ var compileTests = map[string]struct {
 						NewNumber("0"),
 					},
 					Instructions: []Instruction{
-						{
+						&CallInstruction{
 							Call: "display ?",
 							Args: []int{0},
+						},
+					},
+				},
+			},
+		},
+	},
+	"InlineIf": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"start": {
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Statements: []Statement{
+						&If{
+							Condition: &Condition{
+								Left:     NewText("foo"),
+								Right:    NewText("bar"),
+								Operator: OperatorEqual,
+							},
+							True: &Sentence{
+								Words: []interface{}{
+									"display", NewText("match!"),
+								},
+							},
+						},
+						&Sentence{
+							Words: []interface{}{
+								"display", NewText("done"),
+							},
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("foo"), NewText("bar"), NewText("match!"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorEqual,
+							True:     1,
+							False:    2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{2},
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+					},
+				},
+			},
+		},
+	},
+	"InlineIfElse": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"start": {
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Statements: []Statement{
+						&If{
+							Condition: &Condition{
+								Left:     NewText("foo"),
+								Right:    NewText("bar"),
+								Operator: OperatorNotEqual,
+							},
+							True: &Sentence{
+								Words: []interface{}{
+									"display", NewText("match!"),
+								},
+							},
+							False: &Sentence{
+								Words: []interface{}{
+									"display", NewText("no match!"),
+								},
+							},
+						},
+						&Sentence{
+							Words: []interface{}{
+								"display", NewText("done"),
+							},
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("foo"), NewText("bar"), NewText("match!"), NewText("no match!"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorNotEqual,
+							True:     1,
+							False:    3,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{2},
+						},
+						&JumpInstruction{
+							Forward: 2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{4},
 						},
 					},
 				},

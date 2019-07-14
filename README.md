@@ -9,6 +9,8 @@
          * [Text](#text)
          * [Number](#number)
       * [Functions (Custom Sentences)](#functions-custom-sentences)
+      * [Controlling Flow](#controlling-flow)
+         * [Decisions](#decisions)
    * [Examples](#examples)
       * [Hello, World!](#hello-world)
       * [Variables](#variables-1)
@@ -163,6 +165,43 @@ say "Hi" to "Bob"
 ```
 
 The order in which the arguments are defined is not important.
+
+## Controlling Flow
+
+### Decisions
+
+Sentences starting with `if` can be used to control the flow. An `if` sentence
+takes on of the following forms:
+
+```
+if <condition>, <true>
+
+if <condition>, <true>, otherwise <false>
+```
+
+Where `<condition>` is a simple comparison between two variables or values. Some
+examples are:
+
+```
+name = "Bob"
+counter > 10
+```
+
+All supported operators are:
+
+- `=` - Equal.
+- `!=` - Not equal.
+- `>` - Greater than.
+- `>=` - Greater than or equal.
+- `<` - Less than.
+- `<=` - Less than or equal.
+
+Values can only be compared when they are the same type. For example the
+following is not allowed, and will return an error:
+
+```
+"123" = 123
+```
 
 # Examples
 

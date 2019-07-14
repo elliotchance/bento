@@ -1,10 +1,30 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"math/big"
 	"os"
+	"reflect"
+	"strings"
 )
+
+type Instruction interface{}
+
+type ConditionJumpInstruction struct {
+	Left, Right int
+	Operator    string
+	True, False int
+}
+
+type JumpInstruction struct {
+	Forward int
+}
+
+type CallInstruction struct {
+	Call string
+	Args []int
+}
 
 type VirtualMachine struct {
 	program        *CompiledProgram
@@ -21,18 +41,13 @@ func NewVirtualMachine(program *CompiledProgram) *VirtualMachine {
 	}
 }
 
-func (vm *VirtualMachine) Run() {
+func (vm *VirtualMachine) Run() error {
 	// TODO: Check start exists.
-	vm.call("start", nil)
+	return vm.call("start", nil)
 }
 
-func (vm *VirtualMachine) call(syntax string, args []int) {
+func (vm *VirtualMachine) call(syntax string, args []int) error {
 	fn := vm.program.Functions[syntax]
-
-	if fn == nil {
-		// TODO: Remove me
-		panic(syntax)
-	}
 
 	// Expand the memory to accommodate the call.
 	vm.memory = append(vm.memory, fn.Variables...)
@@ -47,16 +62,113 @@ func (vm *VirtualMachine) call(syntax string, args []int) {
 	vm.previousOffset = vm.memoryOffset
 	vm.memoryOffset += len(fn.Variables)
 
-	for _, instruction := range fn.Instructions {
-		// Check if it is a system call?
-		if handler, ok := System[instruction.Call]; ok {
-			handler(vm, instruction.Args)
-			continue
+	for fn.InstructionOffset < len(fn.Instructions) {
+		instruction := fn.Instructions[fn.InstructionOffset]
+
+		var move int
+		var err error
+
+		// TODO: This switch needs to be refactored into an interface.
+		switch ins := instruction.(type) {
+		case *CallInstruction:
+			move, err = vm.callInstruction(ins)
+
+		case *ConditionJumpInstruction:
+			move, err = vm.conditionJumpInstruction(ins)
+
+		case *JumpInstruction:
+			move, err = vm.jumpInstruction(ins)
+
+		default:
+			panic(ins)
 		}
 
-		// Otherwise we have to increase the stack.
-		vm.call(instruction.Call, instruction.Args)
+		if err != nil {
+			return err
+		}
+
+		fn.InstructionOffset += move
 	}
+
+	return nil
+}
+
+func (vm *VirtualMachine) textCompare(a, b *string) bool {
+	return *a == *b
+}
+
+func (vm *VirtualMachine) conditionJumpInstruction(instruction *ConditionJumpInstruction) (int, error) {
+	cmp := 0
+	left := vm.GetArg(instruction.Left)
+	right := vm.GetArg(instruction.Right)
+
+	leftText, leftIsText := left.(*string)
+	rightText, rightIsText := right.(*string)
+
+	if leftIsText && rightIsText {
+		cmp = strings.Compare(*leftText, *rightText)
+		goto done
+	} else {
+		leftNumber, leftIsNumber := left.(*big.Rat)
+		rightNumber, rightIsNumber := right.(*big.Rat)
+
+		if leftIsNumber && rightIsNumber {
+			cmp = leftNumber.Cmp(rightNumber)
+			goto done
+		}
+	}
+
+	return 0, fmt.Errorf("cannot compare: %s %s %s",
+		vm.GetArgType(instruction.Left),
+		instruction.Operator,
+		vm.GetArgType(instruction.Right))
+
+done:
+	var result bool
+	switch instruction.Operator {
+	case OperatorEqual:
+		result = cmp == 0
+
+	case OperatorNotEqual:
+		result = cmp != 0
+
+	case OperatorGreaterThan:
+		result = cmp > 0
+
+	case OperatorGreaterThanEqual:
+		result = cmp >= 0
+
+	case OperatorLessThan:
+		result = cmp < 0
+
+	case OperatorLessThanEqual:
+		result = cmp <= 0
+
+	default:
+		panic(instruction.Operator)
+	}
+
+	if result {
+		return instruction.True, nil
+	}
+
+	return instruction.False, nil
+}
+
+func (vm *VirtualMachine) jumpInstruction(instruction *JumpInstruction) (int, error) {
+	return instruction.Forward, nil
+}
+
+func (vm *VirtualMachine) callInstruction(instruction *CallInstruction) (int, error) {
+	// Check if it is a system call?
+	if handler, ok := System[instruction.Call]; ok {
+		handler(vm, instruction.Args)
+
+		return 1, nil
+	}
+
+	// Otherwise we have to increase the stack.
+	return 1, vm.call(instruction.Call, instruction.Args)
 }
 
 func (vm *VirtualMachine) GetArg(index int) interface{} {
@@ -69,4 +181,16 @@ func (vm *VirtualMachine) SetArg(index int, value interface{}) {
 
 func (vm *VirtualMachine) GetNumber(index int) *big.Rat {
 	return vm.memory[vm.previousOffset+index].(*big.Rat)
+}
+
+func (vm *VirtualMachine) GetArgType(index int) string {
+	switch vm.GetArg(index).(type) {
+	case *string:
+		return VariableTypeText
+
+	case *big.Rat:
+		return VariableTypeNumber
+	}
+
+	return reflect.TypeOf(vm.GetArg(index)).String()
 }

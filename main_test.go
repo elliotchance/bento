@@ -38,7 +38,8 @@ func TestBentoFiles(t *testing.T) {
 
 			vm := NewVirtualMachine(compiledProgram)
 			vm.out = bytes.NewBuffer(nil)
-			vm.Run()
+			err = vm.Run()
+			require.NoError(t, err)
 
 			expectedFilePath := dir + strings.Replace(fileInfo.Name(), ".bento", ".txt", -1)
 			expectedData, err := ioutil.ReadFile(expectedFilePath)

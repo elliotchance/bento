@@ -17,6 +17,7 @@ const (
 	TokenKindOpenBracket  = "("
 	TokenKindCloseBracket = ")"
 	TokenKindComma        = ","
+	TokenKindOperator     = "operator"
 )
 
 type Token struct {
@@ -46,6 +47,11 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 		case ':':
 			tokens = append(tokens, Token{TokenKindColon, ""})
 
+		case '=', '!', '>', '<':
+			var operator string
+			operator, i = consumeCharacters(isOperatorCharacter, entire, i)
+			tokens = append(tokens, Token{TokenKindOperator, operator})
+
 		case '#':
 			tokens = appendEndOfLine(tokens)
 			for ; i < len(entire); i++ {
@@ -68,19 +74,9 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 			}
 
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-':
-			for start := i; i < len(entire); i++ {
-				if !isNumberCharacter(entire[i]) {
-					tokens = append(tokens,
-						Token{TokenKindNumber, entire[start:i]})
-					break
-				}
-
-				if i == len(entire)-1 {
-					tokens = append(tokens,
-						Token{TokenKindNumber, entire[start : i+1]})
-					break
-				}
-			}
+			var number string
+			number, i = consumeCharacters(isNumberCharacter, entire, i)
+			tokens = append(tokens, Token{TokenKindNumber, number})
 
 			// TODO: Check invalid numbers like 1.2.3
 
@@ -88,23 +84,11 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 			// Ignore whitespace.
 
 		default:
-			// Consume a possibly hyphenated word. We have to consume all
-			// characters here because the '-' is ambiguous between numbers and
-			// words.
-			for start := i; i < len(entire); i++ {
-				if !isWordCharacter(entire[i]) {
-					tokens = append(tokens,
-						Token{TokenKindWord, strings.ToLower(entire[start:i])})
-					i--
-					break
-				}
+			// TODO: If nothing is consumed below it will be an infinite loop.
 
-				if i == len(entire)-1 {
-					tokens = append(tokens,
-						Token{TokenKindWord, strings.ToLower(entire[start : i+1])})
-					break
-				}
-			}
+			var word string
+			word, i = consumeCharacters(isWordCharacter, entire, i)
+			tokens = append(tokens, Token{TokenKindWord, strings.ToLower(word)})
 		}
 	}
 
@@ -112,6 +96,22 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 	tokens = append(tokens, Token{TokenKindEndOfFile, ""})
 
 	return
+}
+
+func consumeCharacters(t func(byte) bool, entire string, i int) (string, int) {
+	start := i
+
+	for ; i < len(entire); i++ {
+		if !t(entire[i]) {
+			break
+		}
+	}
+
+	return entire[start:i], i - 1
+}
+
+func isOperatorCharacter(c byte) bool {
+	return c == '=' || c == '!' || c == '<' || c == '>'
 }
 
 func isNumberCharacter(c byte) bool {
