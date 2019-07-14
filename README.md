@@ -14,6 +14,8 @@
       * [Functions (Custom Sentences)](#functions-custom-sentences)
       * [Controlling Flow](#controlling-flow)
          * [Decisions (if/unless)](#decisions-ifunless)
+   * [Backends](#backends)
+      * [System](#system)
    * [Examples](#examples)
       * [Hello, World!](#hello-world)
       * [Variables](#variables-1)
@@ -237,6 +239,38 @@ following is not allowed, and will return an error:
 
 ```
 "123" = 123
+```
+
+# Backends
+
+A backend performs the tasks described in the bento program.
+
+## System
+
+The system backend provides direct access to running programs on the host
+machine.
+
+- `run system command <command>`: Run the `command` and send all stdout and
+stderr to the console.
+
+- `run system command <command> output into <output>`: Run the `command` and
+capture all of the stdout and stderr into the `output`.
+
+- `run system command <command> status code into <status>`: Run the `command`
+and discard and stdout and stderr. Instead capture the status code returned in
+`status`.
+
+- `run system command <command> output into <output> status code into <status>`:
+Run the `command` and capture the stdout and stderr into `output` as well as the
+status code returned into `status`.
+
+Example:
+
+```bento
+start:
+	declare echo-result is number
+	run system command "echo hello" status code into echo-result
+	unless echo-result = 0, display "command failed!"
 ```
 
 # Examples

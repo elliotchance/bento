@@ -1,0 +1,19 @@
+start:
+	declare echo-result is text
+	declare echo-status is number
+
+	run system command "echo hi"
+	run system command "nosuchcommand"
+
+	run system command "echo hello" output into echo-result
+	display "---1"
+	display echo-result
+
+	run system command "nosuchcommand" status code into echo-status
+	display "---2"
+	display echo-status
+
+	run system command "exit 52" output into echo-result status code into echo-status
+	display "---3"
+	display echo-result
+	display echo-status

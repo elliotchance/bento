@@ -49,6 +49,11 @@ func (vm *VirtualMachine) Run() error {
 func (vm *VirtualMachine) call(syntax string, args []int) error {
 	fn := vm.program.Functions[syntax]
 
+	// TODO: This should be picked up in compile time.
+	if fn == nil {
+		return fmt.Errorf("no such function: %s", syntax)
+	}
+
 	// Expand the memory to accommodate the call.
 	vm.memory = append(vm.memory, fn.Variables...)
 
@@ -174,6 +179,10 @@ func (vm *VirtualMachine) SetArg(index int, value interface{}) {
 
 func (vm *VirtualMachine) GetNumber(index int) *big.Rat {
 	return vm.memory[vm.previousOffset+index].(*big.Rat)
+}
+
+func (vm *VirtualMachine) GetText(index int) *string {
+	return vm.memory[vm.previousOffset+index].(*string)
 }
 
 func (vm *VirtualMachine) GetArgType(index int) string {
