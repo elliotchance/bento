@@ -2,11 +2,6 @@ language: go
 
 go: "1.12.x"
 
-stages:
-  - Test
-  - name: Release
-    if: tag =~ ^v
-
 env:
   global:
     # This is only needed until Go 1.13 when it will be the default.
@@ -22,6 +17,7 @@ after_success:
 jobs:
   include:
     - stage: Release
+      if: tag =~ ^v
       script:
         - GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bento && zip bento-linux.zip bento
         - GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bento && zip bento-mac.zip bento
