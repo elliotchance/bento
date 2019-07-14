@@ -12,26 +12,39 @@ type CompiledProgram struct {
 	Functions map[string]*CompiledFunction
 }
 
-func CompileProgram(program *Program) *CompiledProgram {
+type Compiler struct {
+	program  *Program
+	function *Function
+	cf       *CompiledFunction
+}
+
+func NewCompiler(program *Program) *Compiler {
+	return &Compiler{
+		program: program,
+	}
+}
+
+func (compiler *Compiler) Compile() *CompiledProgram {
 	cp := &CompiledProgram{
 		Functions: make(map[string]*CompiledFunction),
 	}
 
-	for _, function := range program.Functions {
-		syntax := function.Definition.Syntax()
-		cp.Functions[syntax] = CompileFunction(function)
+	for _, compiler.function = range compiler.program.Functions {
+		syntax := compiler.function.Definition.Syntax()
+		compiler.compileFunction()
+		cp.Functions[syntax] = compiler.cf
 	}
 
 	return cp
 }
 
-func CompileFunction(function *Function) *CompiledFunction {
-	cf := &CompiledFunction{}
+func (compiler *Compiler) compileFunction() {
+	compiler.cf = &CompiledFunction{}
 
 	// Make spaces for the arguments and locally declared variables. These
 	// placeholders will be nil. The virtual machine will fill in the real
 	// values at the time the function is invoked.
-	for _, variable := range function.Variables {
+	for _, variable := range compiler.function.Variables {
 		var value interface{}
 
 		switch variable.Type {
@@ -42,29 +55,48 @@ func CompileFunction(function *Function) *CompiledFunction {
 			value = NewNumber("0")
 		}
 
-		cf.Variables = append(cf.Variables, value)
+		compiler.cf.Variables = append(compiler.cf.Variables, value)
 	}
 
 	// All of other constants are appended into the end.
-	for _, statement := range function.Statements {
+	// TODO: Change this switch into an interface.
+	for _, statement := range compiler.function.Statements {
 		switch stmt := statement.(type) {
 		case *Sentence:
-			cf.Instructions = append(cf.Instructions,
-				compileSentence(cf, function, stmt))
+			compiler.cf.Instructions = append(compiler.cf.Instructions,
+				compiler.compileSentence(stmt))
 
 		case *If:
-			cf.Instructions = append(cf.Instructions,
-				compileIf(cf, function, stmt)...)
+			compiler.cf.Instructions = append(compiler.cf.Instructions,
+				compiler.compileIf(stmt)...)
 
 		default:
 			panic(stmt)
 		}
 	}
-
-	return cf
 }
 
-func compileSentence(cf *CompiledFunction, function *Function, sentence *Sentence) Instruction {
+func (compiler *Compiler) resolveArg(arg interface{}) int {
+	switch a := arg.(type) {
+	case VariableReference:
+		for i, arg2 := range compiler.function.Variables {
+			if string(a) == arg2.Name {
+				return i
+			}
+		}
+
+		// TODO: handle bad variable name
+
+	case *string, *big.Rat:
+		compiler.cf.Variables = append(compiler.cf.Variables, a)
+		return len(compiler.cf.Variables) - 1
+	}
+
+	// Not possible
+	return 0
+}
+
+func (compiler *Compiler) compileSentence(sentence *Sentence) Instruction {
 	instruction := &CallInstruction{
 		Call: sentence.Syntax(),
 		Args: nil,
@@ -73,32 +105,13 @@ func compileSentence(cf *CompiledFunction, function *Function, sentence *Sentenc
 	// TODO: Check the syntax exists in the system or file.
 
 	for _, arg := range sentence.Args() {
-		switch a := arg.(type) {
-		case VariableReference:
-			for i, arg2 := range function.Variables {
-				if string(a) == arg2.Name {
-					instruction.Args = append(instruction.Args, i)
-					break
-				}
-			}
-
-			// TODO: handle bad variable name
-
-		case *string, *big.Rat:
-			instruction.Args = append(instruction.Args, len(cf.Variables))
-			cf.Variables = append(cf.Variables, a)
-
-		default:
-			// TODO: This shouldn't be possible, it can be removed when the
-			//  compiler is stable.
-			panic(arg)
-		}
+		instruction.Args = append(instruction.Args, compiler.resolveArg(arg))
 	}
 
 	return instruction
 }
 
-func compileIf(cf *CompiledFunction, function *Function, ifStmt *If) []Instruction {
+func (compiler *Compiler) compileIf(ifStmt *If) []Instruction {
 	jumpInstruction := &ConditionJumpInstruction{
 		Operator: ifStmt.Condition.Operator,
 		True:     1,
@@ -111,53 +124,17 @@ func compileIf(cf *CompiledFunction, function *Function, ifStmt *If) []Instructi
 		jumpInstruction.False++
 	}
 
-	// TODO: This is duplicate code from compileSentence
-	switch a := ifStmt.Condition.Left.(type) {
-	case VariableReference:
-		for i, arg2 := range function.Variables {
-			if string(a) == arg2.Name {
-				jumpInstruction.Left = i
-				break
-			}
-		}
+	jumpInstruction.Left = compiler.resolveArg(ifStmt.Condition.Left)
+	jumpInstruction.Right = compiler.resolveArg(ifStmt.Condition.Right)
 
-	// TODO: handle bad variable name
-
-	case *string, *big.Rat:
-		jumpInstruction.Left = len(cf.Variables)
-		cf.Variables = append(cf.Variables, a)
-
-	default:
-		// TODO: This shouldn't be possible, it can be removed when the
-		//  compiler is stable.
-		panic(a)
-	}
-
-	// TODO: This is duplicate code from compileSentence (and above).
-	switch a := ifStmt.Condition.Right.(type) {
-	case VariableReference:
-		for i, arg2 := range function.Variables {
-			if string(a) == arg2.Name {
-				jumpInstruction.Right = i
-				break
-			}
-		}
-
-	// TODO: handle bad variable name
-
-	case *string, *big.Rat:
-		jumpInstruction.Right = len(cf.Variables)
-		cf.Variables = append(cf.Variables, a)
-
-	default:
-		// TODO: This shouldn't be possible, it can be removed when the
-		//  compiler is stable.
-		panic(a)
+	if ifStmt.Unless {
+		jumpInstruction.True, jumpInstruction.False =
+			jumpInstruction.False, jumpInstruction.True
 	}
 
 	instructions := []Instruction{
 		jumpInstruction,
-		compileSentence(cf, function, ifStmt.True),
+		compiler.compileSentence(ifStmt.True),
 	}
 
 	if ifStmt.False != nil {
@@ -166,7 +143,7 @@ func compileIf(cf *CompiledFunction, function *Function, ifStmt *If) []Instructi
 			// clause.
 			&JumpInstruction{Forward: 2},
 
-			compileSentence(cf, function, ifStmt.False))
+			compiler.compileSentence(ifStmt.False))
 	}
 
 	return instructions

@@ -12,6 +12,7 @@ const (
 	WordDeclare   = "declare"
 	WordIf        = "if"
 	WordOtherwise = "otherwise"
+	WordUnless    = "unless"
 )
 
 type Parser struct {
@@ -88,8 +89,15 @@ func (parser *Parser) consumeTokens(kinds []string) (tokens []Token) {
 	return
 }
 
-func (parser *Parser) consumeSpecificWord(expected string) (string, error) {
-	word, err := parser.consumeWord()
+func (parser *Parser) consumeSpecificWord(expected string) (word string, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	word, err = parser.consumeWord()
 	if err != nil {
 		return "", err
 	}
@@ -270,7 +278,7 @@ func (parser *Parser) consumeFunction() (function *Function, err error) {
 			continue
 		}
 
-		// if ...
+		// if/unless ...
 		ifStmt, err := parser.consumeIf(function.VariableMap())
 		if err == nil {
 			function.AppendStatement(ifStmt)
@@ -390,7 +398,12 @@ func (parser *Parser) consumeIf(varMap map[string]*VariableDefinition) (ifStmt *
 
 	_, err = parser.consumeSpecificWord(WordIf)
 	if err != nil {
-		return
+		_, err = parser.consumeSpecificWord(WordUnless)
+		if err != nil {
+			return nil, errors.New("expected if or unless")
+		}
+
+		ifStmt.Unless = true
 	}
 
 	// TODO: If we hit and if, we must not allow it to process the line as a

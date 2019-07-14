@@ -93,10 +93,6 @@ func (vm *VirtualMachine) call(syntax string, args []int) error {
 	return nil
 }
 
-func (vm *VirtualMachine) textCompare(a, b *string) bool {
-	return *a == *b
-}
-
 func (vm *VirtualMachine) conditionJumpInstruction(instruction *ConditionJumpInstruction) (int, error) {
 	cmp := 0
 	left := vm.GetArg(instruction.Left)
@@ -143,9 +139,6 @@ done:
 
 	case OperatorLessThanEqual:
 		result = cmp <= 0
-
-	default:
-		panic(instruction.Operator)
 	}
 
 	if result {

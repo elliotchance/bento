@@ -368,6 +368,85 @@ func TestParser_Parse(t *testing.T) {
 				},
 			},
 		},
+		"InlineUnless": {
+			bento: "start: declare foo is text\nunless foo = \"qux\", quux 1.234\ncorge",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "foo",
+								Type:       "text",
+								LocalScope: true,
+							},
+						},
+						Statements: []Statement{
+							&If{
+								Unless: true,
+								Condition: &Condition{
+									Left:     VariableReference("foo"),
+									Right:    NewText("qux"),
+									Operator: OperatorEqual,
+								},
+								True: &Sentence{
+									Words: []interface{}{
+										"quux", NewNumber("1.234"),
+									},
+								},
+							},
+							&Sentence{
+								Words: []interface{}{
+									"corge",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"InlineUnlessElse": {
+			bento: "start: declare foo is text\nunless foo = \"qux\", quux 1.234, otherwise corge\ndisplay",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "foo",
+								Type:       "text",
+								LocalScope: true,
+							},
+						},
+						Statements: []Statement{
+							&If{
+								Unless: true,
+								Condition: &Condition{
+									Left:     VariableReference("foo"),
+									Right:    NewText("qux"),
+									Operator: OperatorEqual,
+								},
+								True: &Sentence{
+									Words: []interface{}{
+										"quux", NewNumber("1.234"),
+									},
+								},
+								False: &Sentence{
+									Words: []interface{}{
+										"corge",
+									},
+								},
+							},
+							&Sentence{
+								Words: []interface{}{
+									"display",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
 			parser := NewParser(strings.NewReader(test.bento))

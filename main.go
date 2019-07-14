@@ -40,7 +40,8 @@ func main() {
 			os.Exit(0)
 		}
 
-		compiledProgram := CompileProgram(program)
+		compiler := NewCompiler(program)
+		compiledProgram := compiler.Compile()
 
 		vm := NewVirtualMachine(compiledProgram)
 		vm.Run()
