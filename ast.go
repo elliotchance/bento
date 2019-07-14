@@ -105,6 +105,7 @@ type Condition struct {
 }
 
 type If struct {
+	Unless      bool
 	Condition   *Condition
 	True, False *Sentence
 }

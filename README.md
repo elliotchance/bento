@@ -10,7 +10,7 @@
          * [Number](#number)
       * [Functions (Custom Sentences)](#functions-custom-sentences)
       * [Controlling Flow](#controlling-flow)
-         * [Decisions](#decisions)
+         * [Decisions (if/unless)](#decisions-ifunless)
    * [Examples](#examples)
       * [Hello, World!](#hello-world)
       * [Variables](#variables-1)
@@ -168,15 +168,16 @@ The order in which the arguments are defined is not important.
 
 ## Controlling Flow
 
-### Decisions
+### Decisions (if/unless)
 
-Sentences starting with `if` can be used to control the flow. An `if` sentence
-takes on of the following forms:
+Sentences starting with `if` or `unless` can be used to control the flow. The
+sentence takes one of the following forms (each either starting with `if` or
+`unless`):
 
 ```
-if <condition>, <true>
+if/unless <condition>, <true>
 
-if <condition>, <true>, otherwise <false>
+if/unless <condition>, <true>, otherwise <false>
 ```
 
 Where `<condition>` is a simple comparison between two variables or values. Some
@@ -185,6 +186,14 @@ examples are:
 ```
 name = "Bob"
 counter > 10
+first-name != last-name
+```
+
+When `unless` is used instead of `if` the comparison is inverted, so that:
+
+```
+if "Bob" = "Bob"      # true
+unless "Bob" = "Bob"  # false
 ```
 
 All supported operators are:

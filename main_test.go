@@ -34,7 +34,8 @@ func TestBentoFiles(t *testing.T) {
 			program, err := parser.Parse()
 			require.NoError(t, err)
 
-			compiledProgram := CompileProgram(program)
+			compiler := NewCompiler(program)
+			compiledProgram := compiler.Compile()
 
 			vm := NewVirtualMachine(compiledProgram)
 			vm.out = bytes.NewBuffer(nil)

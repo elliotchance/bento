@@ -214,6 +214,109 @@ var vmTests = map[string]struct {
 		},
 		expectedOutput: "match!\ndone\n",
 	},
+	"InlineUnlessTrue": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("foo"), NewText("foo"), NewText("match!"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorEqual,
+							True:     2,
+							False:    1,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{2},
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewText("foo"), NewText("foo"), NewText("match!"), NewText("done"), // start
+		},
+		expectedOutput: "done\n",
+	},
+	"InlineUnlessFalse": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("foo"), NewText("bar"), NewText("match!"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorEqual,
+							True:     2,
+							False:    1,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{2},
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewText("foo"), NewText("bar"), NewText("match!"), NewText("done"), // start
+		},
+		expectedOutput: "match!\ndone\n",
+	},
+	"InlineUnlessElseTrue": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("foo"), NewText("foo"), NewText("match!"), NewText("no match!"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorEqual,
+							True:     2,
+							False:    1,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{2},
+						},
+						&JumpInstruction{
+							Forward: 2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{4},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewText("foo"), NewText("foo"), NewText("match!"), NewText("no match!"), NewText("done"), // start
+		},
+		expectedOutput: "done\n",
+	},
 }
 
 var vmConditionTests = map[string]interface{}{
@@ -284,7 +387,8 @@ func TestVirtualMachine_ConditionTests(t *testing.T) {
 			program, err := parser.Parse()
 			require.NoError(t, err)
 
-			compiledProgram := CompileProgram(program)
+			compiler := NewCompiler(program)
+			compiledProgram := compiler.Compile()
 
 			vm := NewVirtualMachine(compiledProgram)
 			vm.out = bytes.NewBuffer(nil)
