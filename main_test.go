@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -42,9 +43,16 @@ func TestBentoFiles(t *testing.T) {
 			err = vm.Run()
 			require.NoError(t, err)
 
-			expectedFilePath := dir + strings.Replace(fileInfo.Name(), ".bento", ".txt", -1)
+			// There can be a specific expectation file depending on the OS.
+			expectedFilePath := dir + strings.Replace(fileInfo.Name(), ".bento", "."+runtime.GOOS+".txt", -1)
 			expectedData, err := ioutil.ReadFile(expectedFilePath)
-			require.NoError(t, err)
+
+			if err != nil {
+				// Fallback to generic expectation file.
+				expectedFilePath = dir + strings.Replace(fileInfo.Name(), ".bento", ".txt", -1)
+				expectedData, err = ioutil.ReadFile(expectedFilePath)
+				require.NoError(t, err)
+			}
 
 			assert.Equal(t, string(expectedData), vm.out.(*bytes.Buffer).String())
 		})

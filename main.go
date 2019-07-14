@@ -44,6 +44,10 @@ func main() {
 		compiledProgram := compiler.Compile()
 
 		vm := NewVirtualMachine(compiledProgram)
-		vm.Run()
+		err = vm.Run()
+
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 }
