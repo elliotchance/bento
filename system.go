@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/big"
 	"os/exec"
 	"strconv"
 	"syscall"
@@ -27,8 +26,8 @@ func display(vm *VirtualMachine, args []int) {
 	case *string: // text
 		_, _ = fmt.Fprintf(vm.out, "%v\n", *value)
 
-	case *big.Rat: // number
-		_, _ = fmt.Fprintf(vm.out, "%v\n", value.FloatString(6))
+	case *Number:
+		_, _ = fmt.Fprintf(vm.out, "%v\n", value.String())
 
 	default:
 		panic(value)
@@ -36,44 +35,44 @@ func display(vm *VirtualMachine, args []int) {
 }
 
 func setVariable(vm *VirtualMachine, args []int) {
-	var newValue interface{}
-
 	switch value := vm.GetArg(args[1]).(type) {
 	case *string: // text
-		newValue = NewText(*value)
+		vm.SetArg(args[0], NewText(*value))
 
-	case *big.Rat: // number
-		newValue = big.NewRat(0, 1).Set(value)
-
-	default:
-		panic(value)
+	case *Number:
+		vm.GetNumber(args[0]).Set(value)
 	}
-
-	vm.SetArg(args[0], newValue)
 }
 
 func add(vm *VirtualMachine, args []int) {
 	a := vm.GetNumber(args[0])
 	b := vm.GetNumber(args[1])
-	vm.SetArg(args[2], big.NewRat(0, 1).Add(a, b))
+	c := vm.GetNumber(args[2])
+	c.Add(a, b)
 }
 
 func subtract(vm *VirtualMachine, args []int) {
 	a := vm.GetNumber(args[0])
 	b := vm.GetNumber(args[1])
-	vm.SetArg(args[2], big.NewRat(0, 1).Sub(b, a))
+	c := vm.GetNumber(args[2])
+
+	// Notice there are in reverse order because the language is
+	// "subtract a from b".
+	c.Sub(b, a)
 }
 
 func multiply(vm *VirtualMachine, args []int) {
 	a := vm.GetNumber(args[0])
 	b := vm.GetNumber(args[1])
-	vm.SetArg(args[2], big.NewRat(0, 1).Mul(a, b))
+	c := vm.GetNumber(args[2])
+	c.Mul(a, b)
 }
 
 func divide(vm *VirtualMachine, args []int) {
 	a := vm.GetNumber(args[0])
 	b := vm.GetNumber(args[1])
-	vm.SetArg(args[2], big.NewRat(0, 1).Quo(a, b))
+	c := vm.GetNumber(args[2])
+	c.Quo(a, b)
 }
 
 func runSystemCommand(rawCommand string) (output []byte, status int) {
@@ -103,12 +102,12 @@ func systemOutput(vm *VirtualMachine, args []int) {
 func systemStatus(vm *VirtualMachine, args []int) {
 	rawCommand := vm.GetText(args[0])
 	_, status := runSystemCommand(*rawCommand)
-	vm.SetArg(args[1], NewNumber(strconv.Itoa(status)))
+	vm.SetArg(args[1], NewNumber(strconv.Itoa(status), 0))
 }
 
 func systemOutputStatus(vm *VirtualMachine, args []int) {
 	rawCommand := vm.GetText(args[0])
 	output, status := runSystemCommand(*rawCommand)
 	vm.SetArg(args[1], NewText(string(output)))
-	vm.SetArg(args[2], NewNumber(strconv.Itoa(status)))
+	vm.SetArg(args[2], NewNumber(strconv.Itoa(status), 0))
 }
