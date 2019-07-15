@@ -571,6 +571,42 @@ func TestParser_Parse(t *testing.T) {
 				},
 			},
 		},
+		"DeclareUsingA": {
+			bento: "start: declare some-variable is a number",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "some-variable",
+								Type:       "number",
+								LocalScope: true,
+								Precision:  6,
+							},
+						},
+					},
+				},
+			},
+		},
+		"DeclareUsingAn": {
+			bento: "start: declare some-variable is an number",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "some-variable",
+								Type:       "number",
+								LocalScope: true,
+								Precision:  6,
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
 			parser := NewParser(strings.NewReader(test.bento))

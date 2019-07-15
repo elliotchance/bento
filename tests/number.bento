@@ -1,6 +1,6 @@
 start:
-	declare first-var is number
-	declare second-var is number
+	declare first-var is a number
+	declare second-var is a number
 
 	set first-var to 1.23
 

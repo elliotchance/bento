@@ -135,14 +135,25 @@ display "Hello" # It can also be here
 
 ## Variables
 
-Variables can be declared with the `declare` keyword:
-
 ```
-declare first-name is <type>
+declare first-name is text
+declare counter is a number
 ```
 
-Where `<type>` is `text` or `number`. Each of the these types has a default
-value (described below). However, the variable can be set with:
+1. Only `text` and `number` is supported. See specific documentation below.
+2. The word `a` or `an` may appear before the type. This can make it easier to
+read: "is a number" rather than "is number". However, the "a" or "an" does not
+have any affect on the program.
+3. All variables for a function must be declare before any other sentences.
+4. The same variable name cannot be defined twice within the same function.
+However, the same variable name can appear in different functions. These are
+unrelated to each other.
+5. You cannot declare a variable with the same name as one of the function
+parameters.
+6. All types have a default value which is safe to use before it is set to
+another value.
+
+Variables can be set with:
 
 ```
 set first-name to "Bob"
@@ -150,9 +161,14 @@ set first-name to "Bob"
 
 ### Text
 
-Text variables can contain any text, including being empty (zero characters).
-It's perfectly safe to use text variables before they have been given a value,
-the default value will be empty.
+```bento
+my-variable is text
+```
+
+1. A `text` variable can contain any text, including being empty (zero
+characters).
+2. It's perfectly safe to use text variables before they have been given a
+value, the default value will be empty.
 
 ### Number
 
@@ -178,6 +194,8 @@ For example, `12.3100` is displayed as `12.31` as long as the number of decimal
 places is at least 2.
 8. The words `places` and `place` mean the same thing. However, it is easier to
 read when `place` is reserved for when there is only one decimal place.
+9. The default value of a `number` is `0`. This is safe to use use before it has
+been set.
 
 #### Mathematical Operations
 

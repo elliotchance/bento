@@ -7,6 +7,11 @@ import (
 	"strconv"
 )
 
+// TODO: Prevent a variable from being redefined by the same name in a function.
+
+// TODO: You cannot declare a variable with the same name as one of the function
+//  parameters.
+
 // These reserved words have special meaning when they are the first word of the
 // sentence. It's fine to include them as normal words inside a sentence.
 const (
@@ -228,6 +233,23 @@ func (parser *Parser) consumeType() (ty string, precision int, err error) {
 		}
 	}()
 
+	// The "a" and "an" are optional so that it is easier to read in some cases:
+	//
+	//   is text
+	//   is a number
+	//   is an order receipt
+
+	_, err = parser.consumeSpecificWord("a")
+	if err == nil {
+		goto consumeType
+	}
+
+	_, err = parser.consumeSpecificWord("an")
+	if err == nil {
+		goto consumeType
+	}
+
+consumeType:
 	ty, err = parser.consumeSpecificWord(VariableTypeText)
 	if err == nil {
 		return ty, 0, nil
