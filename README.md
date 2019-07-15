@@ -11,6 +11,7 @@
       * [Variables](#variables)
          * [Text](#text)
          * [Number](#number)
+            * [Mathematical Operations](#mathematical-operations)
       * [Functions (Custom Sentences)](#functions-custom-sentences)
       * [Controlling Flow](#controlling-flow)
          * [Conditions](#conditions)
@@ -155,10 +156,30 @@ the default value will be empty.
 
 ### Number
 
-Numbers represent exact numerical figures that have no theoretical size limit,
-but have a fixed precision of 6 decimal places.
+```bento
+my-variable is number
+my-variable is number with 1 decimal place
+my-variable is number with 3 decimal places
+```
 
-Basic mathematical operations are:
+1. A number variable is exact and has a maximum number of decimal places (this
+is also called the precision).
+2. If the number of decimal places is not specified it will use 6.
+3. For integers you should use `number with 0 decimal places`.
+4. The number of decimal places cannot be negative.
+5. A number has no practical minimum (negative) or maximum (positive) value. You
+can process incredibly large numbers with absolute precision.
+6. Any calculated value will be rounded at the end of the operation so that it
+never contains more precision than what is allowed. For example if the number
+has one decimal place, `5.5 * 6.5 * 11` evaluates to `393.8` because
+`5.5 * 6.5 = 35.75 => 35.8`, `35.8 * 11 = 393.8`.
+7. Numbers are always displayed without trailing zeroes after the decimal point.
+For example, `12.3100` is displayed as `12.31` as long as the number of decimal
+places is at least 2.
+8. The words `places` and `place` mean the same thing. However, it is easier to
+read when `place` is reserved for when there is only one decimal place.
+
+#### Mathematical Operations
 
 ```bento
 add a and b into c          # c = a + b
@@ -166,6 +187,9 @@ subtract a from b into c    # c = b - c
 multiply a and b into c     # c = a * b
 divide a and b into c       # c = a / b
 ```
+
+Note: Be careful with `subtract` as the operands are in the reverse order of the
+others.
 
 ## Functions (Custom Sentences)
 

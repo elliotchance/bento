@@ -4,7 +4,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
-	"math/big"
 	"testing"
 )
 
@@ -298,7 +297,7 @@ var compileTests = map[string]struct {
 			Functions: map[string]*CompiledFunction{
 				"start": {
 					Variables: []interface{}{
-						NewNumber("0"),
+						NewNumber("0", DefaultNumericPrecision),
 					},
 					Instructions: []Instruction{
 						&CallInstruction{
@@ -667,6 +666,45 @@ var compileTests = map[string]struct {
 			},
 		},
 	},
+	"NumberWithPrecision": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"start": {
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Variables: []*VariableDefinition{
+						{
+							Name:       "foo",
+							Type:       "number",
+							LocalScope: true,
+							Precision:  2,
+						},
+					},
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
+								"display", VariableReference("foo"),
+							},
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewNumber("0", 2),
+					},
+					Instructions: []Instruction{
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{0},
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 func TestCompileProgram(t *testing.T) {
@@ -678,8 +716,8 @@ func TestCompileProgram(t *testing.T) {
 			diff := cmp.Diff(test.expected, cf,
 				cmpopts.IgnoreTypes((func([]interface{}))(nil)),
 				cmpopts.AcyclicTransformer("NumberToString",
-					func(number *big.Rat) string {
-						return number.FloatString(6)
+					func(number *Number) string {
+						return number.String()
 					}))
 
 			assert.Empty(t, diff)

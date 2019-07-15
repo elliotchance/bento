@@ -96,7 +96,7 @@ var vmTests = map[string]struct {
 			Functions: map[string]*CompiledFunction{
 				"start": {
 					Variables: []interface{}{
-						NewNumber("0"), NewNumber("1.23"),
+						NewNumber("0", 6), NewNumber("1.23", 6),
 					},
 					Instructions: []Instruction{
 						&CallInstruction{
@@ -108,7 +108,7 @@ var vmTests = map[string]struct {
 			},
 		},
 		expectedMemory: []interface{}{
-			NewNumber("1.23"), NewNumber("1.23"), // start
+			NewNumber("1.23", 6), NewNumber("1.23", 6), // start
 		},
 	},
 	"InlineIfTrue": {
@@ -322,7 +322,7 @@ var vmTests = map[string]struct {
 			Functions: map[string]*CompiledFunction{
 				"start": {
 					Variables: []interface{}{
-						NewNumber("0"), NewNumber("5"), NewNumber("1"), NewText("done"),
+						NewNumber("0", 6), NewNumber("5", 6), NewNumber("1", 6), NewText("done"),
 					},
 					Instructions: []Instruction{
 						&ConditionJumpInstruction{
@@ -348,7 +348,7 @@ var vmTests = map[string]struct {
 			},
 		},
 		expectedMemory: []interface{}{
-			NewNumber("5"), NewNumber("5"), NewNumber("1"), NewText("done"), // start
+			NewNumber("5", 6), NewNumber("5", 6), NewNumber("1", 6), NewText("done"), // start
 		},
 		expectedOutput: "done\n",
 	},
@@ -357,7 +357,7 @@ var vmTests = map[string]struct {
 			Functions: map[string]*CompiledFunction{
 				"start": {
 					Variables: []interface{}{
-						NewNumber("0"), NewNumber("5"), NewNumber("1"), NewText("done"),
+						NewNumber("0", 6), NewNumber("5", 6), NewNumber("1", 6), NewText("done"),
 					},
 					Instructions: []Instruction{
 						&ConditionJumpInstruction{
@@ -383,9 +383,29 @@ var vmTests = map[string]struct {
 			},
 		},
 		expectedMemory: []interface{}{
-			NewNumber("6"), NewNumber("5"), NewNumber("1"), NewText("done"), // start
+			NewNumber("6", 6), NewNumber("5", 6), NewNumber("1", 6), NewText("done"), // start
 		},
 		expectedOutput: "done\n",
+	},
+	"SetNumberRequiresRounding": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewNumber("0", 1), NewNumber("1.23", 6),
+					},
+					Instructions: []Instruction{
+						&CallInstruction{
+							Call: "set ? to ?",
+							Args: []int{0, 1},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewNumber("1.2", 1), NewNumber("1.23", 6), // start
+		},
 	},
 }
 

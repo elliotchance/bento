@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"math/big"
 	"os"
 	"reflect"
 	"strings"
@@ -110,8 +109,8 @@ func (vm *VirtualMachine) conditionJumpInstruction(instruction *ConditionJumpIns
 		cmp = strings.Compare(*leftText, *rightText)
 		goto done
 	} else {
-		leftNumber, leftIsNumber := left.(*big.Rat)
-		rightNumber, rightIsNumber := right.(*big.Rat)
+		leftNumber, leftIsNumber := left.(*Number)
+		rightNumber, rightIsNumber := right.(*Number)
 
 		if leftIsNumber && rightIsNumber {
 			cmp = leftNumber.Cmp(rightNumber)
@@ -177,8 +176,8 @@ func (vm *VirtualMachine) SetArg(index int, value interface{}) {
 	vm.memory[vm.previousOffset+index] = value
 }
 
-func (vm *VirtualMachine) GetNumber(index int) *big.Rat {
-	return vm.memory[vm.previousOffset+index].(*big.Rat)
+func (vm *VirtualMachine) GetNumber(index int) *Number {
+	return vm.memory[vm.previousOffset+index].(*Number)
 }
 
 func (vm *VirtualMachine) GetText(index int) *string {
@@ -190,7 +189,7 @@ func (vm *VirtualMachine) GetArgType(index int) string {
 	case *string:
 		return VariableTypeText
 
-	case *big.Rat:
+	case *Number:
 		return VariableTypeNumber
 	}
 

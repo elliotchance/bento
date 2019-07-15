@@ -6,3 +6,16 @@ start:
 
 	display first-var
 	display second-var
+
+	# Numbers always calculate to the precision of the destination.
+	declare a is number with 1 decimal place
+	declare b is number with 1 decimal place
+	declare c is number with 2 decimal places
+
+	set a to 5.51 # rounded to 5.5
+	set b to 6.48 # rounded to 6.5
+
+	display a
+	display b
+	multiply a and b into c
+	display c

@@ -5,7 +5,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"math/big"
 	"strings"
 	"testing"
 )
@@ -261,6 +260,7 @@ func TestParser_Parse(t *testing.T) {
 								Name:       "foo",
 								Type:       "number",
 								LocalScope: true,
+								Precision:  6,
 							},
 						},
 					},
@@ -278,12 +278,13 @@ func TestParser_Parse(t *testing.T) {
 								Name:       "foo",
 								Type:       "number",
 								LocalScope: true,
+								Precision:  6,
 							},
 						},
 						Statements: []Statement{
 							&Sentence{
 								Words: []interface{}{
-									"set", VariableReference("foo"), "to", NewNumber("-1.23"),
+									"set", VariableReference("foo"), "to", NewNumber("-1.23", 6),
 								},
 							},
 						},
@@ -313,7 +314,7 @@ func TestParser_Parse(t *testing.T) {
 								},
 								True: &Sentence{
 									Words: []interface{}{
-										"quux", NewNumber("1.234"),
+										"quux", NewNumber("1.234", 6),
 									},
 								},
 							},
@@ -349,7 +350,7 @@ func TestParser_Parse(t *testing.T) {
 								},
 								True: &Sentence{
 									Words: []interface{}{
-										"quux", NewNumber("1.234"),
+										"quux", NewNumber("1.234", 6),
 									},
 								},
 								False: &Sentence{
@@ -391,7 +392,7 @@ func TestParser_Parse(t *testing.T) {
 								},
 								True: &Sentence{
 									Words: []interface{}{
-										"quux", NewNumber("1.234"),
+										"quux", NewNumber("1.234", 6),
 									},
 								},
 							},
@@ -428,7 +429,7 @@ func TestParser_Parse(t *testing.T) {
 								},
 								True: &Sentence{
 									Words: []interface{}{
-										"quux", NewNumber("1.234"),
+										"quux", NewNumber("1.234", 6),
 									},
 								},
 								False: &Sentence{
@@ -469,7 +470,7 @@ func TestParser_Parse(t *testing.T) {
 								},
 								True: &Sentence{
 									Words: []interface{}{
-										"quux", NewNumber("1.234"),
+										"quux", NewNumber("1.234", 6),
 									},
 								},
 							},
@@ -506,13 +507,63 @@ func TestParser_Parse(t *testing.T) {
 								},
 								True: &Sentence{
 									Words: []interface{}{
-										"quux", NewNumber("1.234"),
+										"quux", NewNumber("1.234", 6),
 									},
 								},
 							},
 							&Sentence{
 								Words: []interface{}{
 									"corge",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"NumberWithPrecision": {
+			bento: "start: declare foo is number with 2 decimal places\ndisplay foo",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "foo",
+								Type:       "number",
+								LocalScope: true,
+								Precision:  2,
+							},
+						},
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
+									"display", VariableReference("foo"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"NumberWithPrecision1": {
+			bento: "start: declare foo is number with 1 decimal place\ndisplay foo",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "foo",
+								Type:       "number",
+								LocalScope: true,
+								Precision:  1,
+							},
+						},
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
+									"display", VariableReference("foo"),
 								},
 							},
 						},
@@ -528,8 +579,8 @@ func TestParser_Parse(t *testing.T) {
 
 			diff := cmp.Diff(test.expected, actual,
 				cmpopts.AcyclicTransformer("NumberToString",
-					func(number *big.Rat) string {
-						return number.FloatString(6)
+					func(number *Number) string {
+						return number.String()
 					}))
 
 			assert.Empty(t, diff)
