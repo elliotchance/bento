@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 )
 
 // These reserved words have special meaning when they are the first word of the
@@ -145,24 +146,13 @@ func (parser *Parser) consumeSentenceWord(varMap map[string]*VariableDefinition)
 
 	token, err = parser.consumeToken(TokenKindNumber)
 	if err == nil {
-		return NewNumber(token.Value), nil
+		return NewNumber(token.Value, UnlimitedPrecision), nil
 	}
 
 	return nil, fmt.Errorf("expected sentence word, but found something else")
 }
 
-func (parser *Parser) consumeType() (string, error) {
-	ty, err := parser.consumeWord()
-
-	if ty != VariableTypeText && ty != VariableTypeNumber {
-		return "", fmt.Errorf("expected variable type, but got %s", ty)
-	}
-
-	return ty, err
-}
-
-// some-variable is text
-func (parser *Parser) consumeVariableIsType() (name, ty string, err error) {
+func (parser *Parser) consumeInteger() (value int, err error) {
 	originalOffset := parser.offset
 	defer func() {
 		if err != nil {
@@ -170,26 +160,123 @@ func (parser *Parser) consumeVariableIsType() (name, ty string, err error) {
 		}
 	}()
 
-	name, err = parser.consumeWord()
+	var token Token
+	token, err = parser.consumeToken(TokenKindNumber)
 	if err != nil {
-		return "", "", err
+		return
+	}
+
+	value, err = strconv.Atoi(token.Value)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (parser *Parser) consumeNumberType() (precision int, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	_, err = parser.consumeSpecificWord(VariableTypeNumber)
+	if err != nil {
+		return
+	}
+
+	_, err = parser.consumeSpecificWord("with")
+	if err != nil {
+		// That's OK, we can safely bail out here.
+		precision = DefaultNumericPrecision
+		err = nil
+		return
+	}
+
+	precision, err = parser.consumeInteger()
+	if err != nil {
+		return
+	}
+
+	_, err = parser.consumeSpecificWord("decimal")
+	if err != nil {
+		return
+	}
+
+	_, err = parser.consumeSpecificWord("places")
+	if err != nil {
+		// Even through "places" or "place" is allowed for any number of decimal
+		// places, it reads better to say "1 decimal place".
+		_, err = parser.consumeSpecificWord("place")
+		if err != nil {
+			return
+		}
+
+		err = nil
+	}
+
+	return
+}
+
+func (parser *Parser) consumeType() (ty string, precision int, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	ty, err = parser.consumeSpecificWord(VariableTypeText)
+	if err == nil {
+		return ty, 0, nil
+	}
+
+	precision, err = parser.consumeNumberType()
+	if err == nil {
+		return "number", precision, err
+	}
+
+	return "", 0, fmt.Errorf("expected variable type, but got %s", ty)
+}
+
+// Examples:
+//
+//   some-variable is text
+//   some-variable is number
+//   some-variable is number with 2 decimal places
+//
+func (parser *Parser) consumeVariableIsType() (definition *VariableDefinition, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	definition = new(VariableDefinition)
+
+	definition.Name, err = parser.consumeWord()
+	if err != nil {
+		return nil, err
 	}
 
 	_, err = parser.consumeSpecificWord("is")
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	ty, err = parser.consumeType()
+	definition.Type, definition.Precision, err = parser.consumeType()
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	return
 }
 
 // foo is text, bar is text
-func (parser *Parser) consumeVariableIsTypeList() (list map[string]string, err error) {
+func (parser *Parser) consumeVariableIsTypeList() (list map[string]*VariableDefinition, err error) {
 	originalOffset := parser.offset
 	defer func() {
 		if err != nil {
@@ -197,15 +284,15 @@ func (parser *Parser) consumeVariableIsTypeList() (list map[string]string, err e
 		}
 	}()
 
-	list = map[string]string{}
+	list = map[string]*VariableDefinition{}
 
 	for !parser.isFinished() {
-		name, ty, err := parser.consumeVariableIsType()
+		definition, err := parser.consumeVariableIsType()
 		if err != nil {
 			return nil, err
 		}
 
-		list[name] = ty
+		list[definition.Name] = definition
 
 		_, err = parser.consumeToken(TokenKindComma)
 		if err != nil {
@@ -274,9 +361,10 @@ func (parser *Parser) consumeFunction() (function *Function, err error) {
 
 	for !parser.isFinished() {
 		// declare ...
-		name, ty, err := parser.consumeDeclare()
+		definition, err := parser.consumeDeclare()
 		if err == nil {
-			function.AppendDeclare(name, ty)
+			definition.LocalScope = true
+			function.AppendVariable(definition)
 			continue
 		}
 
@@ -345,7 +433,7 @@ func (parser *Parser) consumeFunctionDeclaration() (function *Function, err erro
 				// Note: It's important that we add the arguments in the order
 				// that they appear rather than the order that they are defined.
 				// Appending them in this loop will ensure that.
-				function.AppendArgument(word.(string), ty)
+				function.AppendArgument(word.(string), ty.Type)
 			}
 		}
 	}
@@ -368,7 +456,7 @@ func (parser *Parser) lineIsFinished() bool {
 	return parser.tokens[parser.offset].Kind == TokenKindEndOfLine
 }
 
-func (parser *Parser) consumeDeclare() (name, ty string, err error) {
+func (parser *Parser) consumeDeclare() (definition *VariableDefinition, err error) {
 	// TODO: Can these be made easier?
 	originalOffset := parser.offset
 	defer func() {
@@ -382,7 +470,7 @@ func (parser *Parser) consumeDeclare() (name, ty string, err error) {
 		return
 	}
 
-	name, ty, err = parser.consumeVariableIsType()
+	definition, err = parser.consumeVariableIsType()
 	if err != nil {
 		return
 	}
@@ -392,7 +480,7 @@ func (parser *Parser) consumeDeclare() (name, ty string, err error) {
 		return
 	}
 
-	return name, ty, nil
+	return
 }
 
 func (parser *Parser) consumeIf(varMap map[string]*VariableDefinition) (ifStmt *If, err error) {

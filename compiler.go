@@ -1,7 +1,5 @@
 package main
 
-import "math/big"
-
 type CompiledFunction struct {
 	Variables         []interface{}
 	Instructions      []Instruction
@@ -52,7 +50,7 @@ func (compiler *Compiler) compileFunction() {
 			value = NewText("")
 
 		case VariableTypeNumber:
-			value = NewNumber("0")
+			value = NewNumber("0", variable.Precision)
 		}
 
 		compiler.cf.Variables = append(compiler.cf.Variables, value)
@@ -91,7 +89,7 @@ func (compiler *Compiler) resolveArg(arg interface{}) int {
 
 		// TODO: handle bad variable name
 
-	case *string, *big.Rat:
+	case *string, *Number:
 		compiler.cf.Variables = append(compiler.cf.Variables, a)
 		return len(compiler.cf.Variables) - 1
 	}

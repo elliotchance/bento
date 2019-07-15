@@ -56,12 +56,8 @@ func (fn *Function) AppendArgument(name, ty string) {
 	})
 }
 
-func (fn *Function) AppendDeclare(name, ty string) {
-	fn.Variables = append(fn.Variables, &VariableDefinition{
-		Name:       name,
-		Type:       ty,
-		LocalScope: true,
-	})
+func (fn *Function) AppendVariable(definition *VariableDefinition) {
+	fn.Variables = append(fn.Variables, definition)
 }
 
 func (fn *Function) AppendStatement(statement Statement) {
