@@ -109,3 +109,9 @@ type If struct {
 	Condition   *Condition
 	True, False *Sentence
 }
+
+type While struct {
+	Until     bool
+	Condition *Condition
+	True      *Sentence
+}

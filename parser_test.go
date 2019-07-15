@@ -447,6 +447,79 @@ func TestParser_Parse(t *testing.T) {
 				},
 			},
 		},
+		"InlineWhile": {
+			bento: "start: declare foo is text\nwhile foo = \"qux\", quux 1.234\ncorge",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "foo",
+								Type:       "text",
+								LocalScope: true,
+							},
+						},
+						Statements: []Statement{
+							&While{
+								Condition: &Condition{
+									Left:     VariableReference("foo"),
+									Right:    NewText("qux"),
+									Operator: OperatorEqual,
+								},
+								True: &Sentence{
+									Words: []interface{}{
+										"quux", NewNumber("1.234"),
+									},
+								},
+							},
+							&Sentence{
+								Words: []interface{}{
+									"corge",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"InlineUntil": {
+			bento: "start: declare foo is text\nuntil foo = \"qux\", quux 1.234\ncorge",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Variables: []*VariableDefinition{
+							{
+								Name:       "foo",
+								Type:       "text",
+								LocalScope: true,
+							},
+						},
+						Statements: []Statement{
+							&While{
+								Until: true,
+								Condition: &Condition{
+									Left:     VariableReference("foo"),
+									Right:    NewText("qux"),
+									Operator: OperatorEqual,
+								},
+								True: &Sentence{
+									Words: []interface{}{
+										"quux", NewNumber("1.234"),
+									},
+								},
+							},
+							&Sentence{
+								Words: []interface{}{
+									"corge",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
 			parser := NewParser(strings.NewReader(test.bento))

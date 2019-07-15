@@ -317,6 +317,76 @@ var vmTests = map[string]struct {
 		},
 		expectedOutput: "done\n",
 	},
+	"InlineWhile": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewNumber("0"), NewNumber("5"), NewNumber("1"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorLessThan,
+							True:     1,
+							False:    3,
+						},
+						&CallInstruction{
+							Call: "add ? and ? into ?",
+							Args: []int{0, 2, 0},
+						},
+						&JumpInstruction{
+							Forward: -2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewNumber("5"), NewNumber("5"), NewNumber("1"), NewText("done"), // start
+		},
+		expectedOutput: "done\n",
+	},
+	"InlineUntil": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewNumber("0"), NewNumber("5"), NewNumber("1"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorGreaterThan,
+							True:     3,
+							False:    1,
+						},
+						&CallInstruction{
+							Call: "add ? and ? into ?",
+							Args: []int{0, 2, 0},
+						},
+						&JumpInstruction{
+							Forward: -2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewNumber("6"), NewNumber("5"), NewNumber("1"), NewText("done"), // start
+		},
+		expectedOutput: "done\n",
+	},
 }
 
 var vmConditionTests = map[string]interface{}{

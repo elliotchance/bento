@@ -1,0 +1,7 @@
+start:
+	declare counter is number
+
+	set counter to 10
+
+	until counter < 3, subtract 2 from counter into counter
+	display counter
