@@ -1,0 +1,5 @@
+start:
+	declare counter is number
+
+	while counter < 10, add counter and 1 into counter
+	display counter

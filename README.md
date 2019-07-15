@@ -13,7 +13,9 @@
          * [Number](#number)
       * [Functions (Custom Sentences)](#functions-custom-sentences)
       * [Controlling Flow](#controlling-flow)
+         * [Conditions](#conditions)
          * [Decisions (if/unless)](#decisions-ifunless)
+         * [Loops (while/until)](#loops-whileuntil)
    * [Backends](#backends)
       * [System](#system)
    * [Examples](#examples)
@@ -197,32 +199,15 @@ The order in which the arguments are defined is not important.
 
 ## Controlling Flow
 
-### Decisions (if/unless)
+### Conditions
 
-Sentences starting with `if` or `unless` can be used to control the flow. The
-sentence takes one of the following forms (each either starting with `if` or
-`unless`):
-
-```
-if/unless <condition>, <true>
-
-if/unless <condition>, <true>, otherwise <false>
-```
-
-Where `<condition>` is a simple comparison between two variables or values. Some
+A condition is a simple comparison between two variables or values. Some
 examples are:
 
 ```
 name = "Bob"
 counter > 10
 first-name != last-name
-```
-
-When `unless` is used instead of `if` the comparison is inverted, so that:
-
-```
-if "Bob" = "Bob"      # true
-unless "Bob" = "Bob"  # false
 ```
 
 All supported operators are:
@@ -239,6 +224,41 @@ following is not allowed, and will return an error:
 
 ```
 "123" = 123
+```
+
+### Decisions (if/unless)
+
+Sentences starting with `if` or `unless` can be used to control the flow. The
+sentence takes one of the following forms (each either starting with `if` or
+`unless`):
+
+```
+if/unless <condition>, <true>
+
+if/unless <condition>, <true>, otherwise <false>
+```
+
+When `unless` is used instead of `if` the comparison is inverted, so that:
+
+```
+if "Bob" = "Bob"      # true
+unless "Bob" = "Bob"  # false
+```
+
+### Loops (while/until)
+
+Sentences starting with `while` repeat the sentence until while the condition is
+true. That is, the loop will only stop once the condition becomes false.
+
+Conversely, using `until` will repeat the sentence until the condition becomes
+true.
+
+Loops are written in one of the following forms:
+
+```
+while/until <condition>, <true>
+
+while/until <condition>, <true>, otherwise <false>
 ```
 
 # Backends

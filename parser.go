@@ -13,6 +13,8 @@ const (
 	WordIf        = "if"
 	WordOtherwise = "otherwise"
 	WordUnless    = "unless"
+	WordUntil     = "until"
+	WordWhile     = "while"
 )
 
 type Parser struct {
@@ -285,6 +287,13 @@ func (parser *Parser) consumeFunction() (function *Function, err error) {
 			continue
 		}
 
+		// while/until ...
+		whileStmt, err := parser.consumeWhile(function.VariableMap())
+		if err == nil {
+			function.AppendStatement(whileStmt)
+			continue
+		}
+
 		// Normal sentence.
 		var sentence *Sentence
 		sentence, err = parser.consumeSentenceCall(function.VariableMap())
@@ -488,4 +497,45 @@ func (parser *Parser) consumeOperator() (string, error) {
 	}
 
 	return operatorToken.Value, nil
+}
+
+func (parser *Parser) consumeWhile(varMap map[string]*VariableDefinition) (whileStmt *While, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	whileStmt = &While{}
+
+	_, err = parser.consumeSpecificWord(WordWhile)
+	if err != nil {
+		_, err = parser.consumeSpecificWord(WordUntil)
+		if err != nil {
+			return nil, errors.New("expected while or until")
+		}
+
+		whileStmt.Until = true
+	}
+
+	// TODO: If we hit a "while", we must not allow it to process the line as a
+	//  sentence.
+
+	whileStmt.Condition, err = parser.consumeCondition(varMap)
+	if err != nil {
+		return
+	}
+
+	_, err = parser.consumeToken(TokenKindComma)
+	if err != nil {
+		return
+	}
+
+	whileStmt.True, err = parser.consumeSentenceCall(varMap)
+	if err != nil {
+		return
+	}
+
+	return
 }

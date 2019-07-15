@@ -430,6 +430,42 @@ func TestTokenize(t *testing.T) {
 				{TokenKindEndOfFile, ""},
 			},
 		},
+		"InlineWhile": {
+			bento: "start: while i < 10, quux 1.234\ncorge",
+			expected: []Token{
+				{TokenKindWord, "start"},
+				{TokenKindColon, ""},
+				{TokenKindWord, "while"},
+				{TokenKindWord, "i"},
+				{TokenKindOperator, "<"},
+				{TokenKindNumber, "10"},
+				{TokenKindComma, ""},
+				{TokenKindWord, "quux"},
+				{TokenKindNumber, "1.234"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindWord, "corge"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
+		"InlineUntil": {
+			bento: "start: until i < 10, quux 1.234\ncorge",
+			expected: []Token{
+				{TokenKindWord, "start"},
+				{TokenKindColon, ""},
+				{TokenKindWord, "until"},
+				{TokenKindWord, "i"},
+				{TokenKindOperator, "<"},
+				{TokenKindNumber, "10"},
+				{TokenKindComma, ""},
+				{TokenKindWord, "quux"},
+				{TokenKindNumber, "1.234"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindWord, "corge"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
 			actual, err := Tokenize(strings.NewReader(test.bento))

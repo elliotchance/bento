@@ -552,6 +552,121 @@ var compileTests = map[string]struct {
 			},
 		},
 	},
+	"InlineWhile": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"start": {
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Statements: []Statement{
+						&While{
+							Condition: &Condition{
+								Left:     NewText("foo"),
+								Right:    NewText("bar"),
+								Operator: OperatorEqual,
+							},
+							True: &Sentence{
+								Words: []interface{}{
+									"display", NewText("match!"),
+								},
+							},
+						},
+						&Sentence{
+							Words: []interface{}{
+								"display", NewText("done"),
+							},
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("foo"), NewText("bar"), NewText("match!"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorEqual,
+							True:     1,
+							False:    3,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{2},
+						},
+						&JumpInstruction{
+							Forward: -2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+					},
+				},
+			},
+		},
+	},
+	"InlineUntil": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"start": {
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Statements: []Statement{
+						&While{
+							Until: true,
+							Condition: &Condition{
+								Left:     NewText("foo"),
+								Right:    NewText("bar"),
+								Operator: OperatorEqual,
+							},
+							True: &Sentence{
+								Words: []interface{}{
+									"display", NewText("match!"),
+								},
+							},
+						},
+						&Sentence{
+							Words: []interface{}{
+								"display", NewText("done"),
+							},
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("foo"), NewText("bar"), NewText("match!"), NewText("done"),
+					},
+					Instructions: []Instruction{
+						&ConditionJumpInstruction{
+							Left:     0,
+							Right:    1,
+							Operator: OperatorEqual,
+							True:     3,
+							False:    1,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{2},
+						},
+						&JumpInstruction{
+							Forward: -2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{3},
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 func TestCompileProgram(t *testing.T) {

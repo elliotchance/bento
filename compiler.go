@@ -70,6 +70,10 @@ func (compiler *Compiler) compileFunction() {
 			compiler.cf.Instructions = append(compiler.cf.Instructions,
 				compiler.compileIf(stmt)...)
 
+		case *While:
+			compiler.cf.Instructions = append(compiler.cf.Instructions,
+				compiler.compileWhile(stmt)...)
+
 		default:
 			panic(stmt)
 		}
@@ -144,6 +148,30 @@ func (compiler *Compiler) compileIf(ifStmt *If) []Instruction {
 			&JumpInstruction{Forward: 2},
 
 			compiler.compileSentence(ifStmt.False))
+	}
+
+	return instructions
+}
+
+func (compiler *Compiler) compileWhile(whileStmt *While) []Instruction {
+	jumpInstruction := &ConditionJumpInstruction{
+		Operator: whileStmt.Condition.Operator,
+		True:     1,
+		False:    3,
+	}
+
+	jumpInstruction.Left = compiler.resolveArg(whileStmt.Condition.Left)
+	jumpInstruction.Right = compiler.resolveArg(whileStmt.Condition.Right)
+
+	if whileStmt.Until {
+		jumpInstruction.True, jumpInstruction.False =
+			jumpInstruction.False, jumpInstruction.True
+	}
+
+	instructions := []Instruction{
+		jumpInstruction,
+		compiler.compileSentence(whileStmt.True),
+		&JumpInstruction{Forward: -2},
 	}
 
 	return instructions
