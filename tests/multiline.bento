@@ -1,0 +1,5 @@
+start:
+	declare result is number
+
+	display ...
+		result

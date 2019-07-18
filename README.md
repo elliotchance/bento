@@ -122,6 +122,18 @@ new line. For example:
 display "Hello"
 ```
 
+Long sentences can be broken up into multiple lines using `...` at the end of
+each line, excluding the last line:
+
+```
+this is a really long...
+	sentence that should go...
+	over multiple lines
+```
+
+Indentation between lines does not make an difference. However, it is easier to
+read when following lines are indented.
+
 ## Comments
 
 Comments start with a `#` and continue until a new line or the end of the
