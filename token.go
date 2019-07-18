@@ -9,7 +9,7 @@ import (
 
 const (
 	TokenKindEndOfFile    = "end of file"
-	TokenKindEndOfLine    = "end of line"
+	TokenKindEndOfLine    = "new line"
 	TokenKindWord         = "word"
 	TokenKindNumber       = "number"
 	TokenKindText         = "text"
@@ -18,6 +18,7 @@ const (
 	TokenKindCloseBracket = ")"
 	TokenKindComma        = ","
 	TokenKindOperator     = "operator"
+	TokenKindEllipsis     = "..."
 )
 
 type Token struct {
@@ -35,6 +36,13 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 
 	for i := 0; i < len(entire); i++ {
 		switch entire[i] {
+		case '.':
+			// TODO: Check len() allows this.
+			if entire[i+1] == '.' && entire[i+2] == '.' {
+				tokens = append(tokens, Token{TokenKindEllipsis, ""})
+				i += 2
+			}
+
 		case ',':
 			tokens = append(tokens, Token{TokenKindComma, ""})
 
