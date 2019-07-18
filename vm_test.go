@@ -407,6 +407,42 @@ var vmTests = map[string]struct {
 			NewNumber("1.2", 1), NewNumber("1.23", 6), // start
 		},
 	},
+	"DisplayBlackhole": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Instructions: []Instruction{
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{blackholeVariableIndex},
+						},
+					},
+				},
+			},
+		},
+		expectedOutput: "\n",
+	},
+	"SetBlackhole": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewNumber("123", 6),
+					},
+					Instructions: []Instruction{
+						&CallInstruction{
+							Call: "set ? to ?",
+							Args: []int{0, blackholeVariableIndex},
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewNumber("123", 6), // start
+		},
+		expectedOutput: "",
+	},
 }
 
 var vmConditionTests = map[string]interface{}{

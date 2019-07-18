@@ -150,11 +150,11 @@ func (parser *Parser) consumeSentenceWord(varMap map[string]*VariableDefinition)
 	var token Token
 	token, err = parser.consumeToken(TokenKindWord)
 	if err == nil {
-		if _, ok := varMap[token.Value]; ok {
+		if _, ok := varMap[token.Value]; ok || token.Value == "_" {
 			return VariableReference(token.Value), nil
-		} else {
-			return token.Value, nil
 		}
+
+		return token.Value, nil
 	}
 
 	token, err = parser.consumeToken(TokenKindText)

@@ -705,6 +705,34 @@ var compileTests = map[string]struct {
 			},
 		},
 	},
+	"DisplayBlackhole": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"start": {
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
+								"display", VariableReference("_"),
+							},
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Instructions: []Instruction{
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{-1},
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 func TestCompileProgram(t *testing.T) {

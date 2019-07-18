@@ -494,6 +494,29 @@ func TestTokenize(t *testing.T) {
 				{TokenKindEndOfFile, ""},
 			},
 		},
+		"BlackholeVariable": {
+			bento: "start: display _",
+			expected: []Token{
+				{TokenKindWord, "start"},
+				{TokenKindColon, ""},
+				{TokenKindWord, "display"},
+				{TokenKindWord, "_"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
+		"VariableStartingWithUnderscore": {
+			bento: "start: display _foo bar",
+			expected: []Token{
+				{TokenKindWord, "start"},
+				{TokenKindColon, ""},
+				{TokenKindWord, "display"},
+				{TokenKindWord, "_foo"},
+				{TokenKindWord, "bar"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
 			actual, err := Tokenize(strings.NewReader(test.bento))
