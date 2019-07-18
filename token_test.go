@@ -466,6 +466,34 @@ func TestTokenize(t *testing.T) {
 				{TokenKindEndOfFile, ""},
 			},
 		},
+		"MultilineSentence1": {
+			bento: "start: foo bar...\n  baz",
+			expected: []Token{
+				{TokenKindWord, "start"},
+				{TokenKindColon, ""},
+				{TokenKindWord, "foo"},
+				{TokenKindWord, "bar"},
+				{TokenKindEllipsis, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindWord, "baz"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
+		"MultilineSentence2": {
+			bento: "start: foo bar\t ...  \n  baz",
+			expected: []Token{
+				{TokenKindWord, "start"},
+				{TokenKindColon, ""},
+				{TokenKindWord, "foo"},
+				{TokenKindWord, "bar"},
+				{TokenKindEllipsis, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindWord, "baz"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
 			actual, err := Tokenize(strings.NewReader(test.bento))

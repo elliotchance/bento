@@ -70,9 +70,22 @@ func (parser *Parser) consumeToken(kind string) (Token, error) {
 		return Token{}, fmt.Errorf("expected %s, but got %s", kind, kind2)
 	}
 
+	token := parser.tokens[parser.offset]
+
 	parser.offset++
 
-	return parser.tokens[parser.offset-1], nil
+	// Consume a conditional multiline.
+	if parser.offset+1 < len(parser.tokens) &&
+		parser.tokens[parser.offset].Kind == TokenKindEllipsis {
+		if kind2 := parser.tokens[parser.offset+1].Kind; kind2 != TokenKindEndOfLine {
+			return Token{},
+				fmt.Errorf("expected %s, but got %s", TokenKindEndOfLine, kind2)
+		}
+
+		parser.offset += 2
+	}
+
+	return token, nil
 }
 
 func (parser *Parser) consumeTokens(kinds []string) (tokens []Token) {
