@@ -643,6 +643,40 @@ func TestParser_Parse(t *testing.T) {
 				},
 			},
 		},
+		"BlackholeVariable": {
+			bento: "start: display _",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
+									"display", VariableReference("_"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"WordStartingWithUnderscore": {
+			bento: "start: display _foo",
+			expected: &Program{
+				Functions: map[string]*Function{
+					"start": {
+						Definition: &Sentence{Words: []interface{}{"start"}},
+						Statements: []Statement{
+							&Sentence{
+								Words: []interface{}{
+									"display", "_foo",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
 			parser := NewParser(strings.NewReader(test.bento))

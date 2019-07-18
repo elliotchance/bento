@@ -22,12 +22,16 @@ var System = map[string]func(vm *VirtualMachine, args []int){
 }
 
 func display(vm *VirtualMachine, args []int) {
+	// TODO: Convert this switch into an interface.
 	switch value := vm.GetArg(args[0]).(type) {
 	case *string: // text
 		_, _ = fmt.Fprintf(vm.out, "%v\n", *value)
 
 	case *Number:
 		_, _ = fmt.Fprintf(vm.out, "%v\n", value.String())
+
+	case nil: // blackhole
+		_, _ = fmt.Fprint(vm.out, "\n")
 
 	default:
 		panic(value)

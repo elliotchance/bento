@@ -1,0 +1,16 @@
+start:
+	declare my-name is text
+	declare result is number
+
+	display _
+
+	set _ to 123
+
+	set my-name to "Bob"
+	display my-name
+
+	add _ and 5 into result
+	display result
+
+	add result and _ into _
+	display result

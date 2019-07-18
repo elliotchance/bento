@@ -9,6 +9,7 @@
       * [Sentences](#sentences)
       * [Comments](#comments)
       * [Variables](#variables)
+         * [Blackhole](#blackhole)
          * [Text](#text)
          * [Number](#number)
             * [Mathematical Operations](#mathematical-operations)
@@ -164,11 +165,33 @@ unrelated to each other.
 parameters.
 6. All types have a default value which is safe to use before it is set to
 another value.
+7. There is a special variable called `_` which is called the blackhole.
+Explained in more detail below.
 
 Variables can be set with:
 
 ```
 set first-name to "Bob"
+```
+
+### Blackhole
+
+The blackhole variable is a single underscore (`_`). It can be used as a
+placeholder when the value can be ignored. For example:
+
+```bento
+divide 1.23 by 7.89 into _
+```
+
+If `_` is used in a place where the value would be read it will return a zero
+value (the same as the default value for that type).
+
+The following lines would function the same. However, you should not rely on the
+blackhole variable as a readable value and it may be made illegal in the future:
+
+```bento
+add _ and 7.89 into result
+add 0 and 7.89 into result
 ```
 
 ### Text

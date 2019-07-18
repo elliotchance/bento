@@ -1,8 +1,9 @@
 package main
 
 const (
-	VariableTypeText   = "text"
-	VariableTypeNumber = "number"
+	VariableTypeBlackhole = "blackhole"
+	VariableTypeText      = "text"
+	VariableTypeNumber    = "number"
 )
 
 type VariableDefinition struct {
@@ -17,6 +18,10 @@ type VariableDefinition struct {
 }
 
 type VariableReference string
+
+var BlackholeVariable = VariableReference("_")
+
+var blackholeVariableIndex = -1
 
 func NewText(s string) *string {
 	return &s

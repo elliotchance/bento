@@ -81,6 +81,10 @@ func (compiler *Compiler) compileFunction() {
 func (compiler *Compiler) resolveArg(arg interface{}) int {
 	switch a := arg.(type) {
 	case VariableReference:
+		if a == BlackholeVariable {
+			return blackholeVariableIndex
+		}
+
 		for i, arg2 := range compiler.function.Variables {
 			if string(a) == arg2.Name {
 				return i

@@ -169,23 +169,42 @@ func (vm *VirtualMachine) callInstruction(instruction *CallInstruction) (int, er
 }
 
 func (vm *VirtualMachine) GetArg(index int) interface{} {
+	if index == blackholeVariableIndex {
+		return nil
+	}
+
 	return vm.memory[vm.previousOffset+index]
 }
 
 func (vm *VirtualMachine) SetArg(index int, value interface{}) {
+	if index == blackholeVariableIndex {
+		return
+	}
+
 	vm.memory[vm.previousOffset+index] = value
 }
 
 func (vm *VirtualMachine) GetNumber(index int) *Number {
+	if index == blackholeVariableIndex {
+		return NewNumber("0", DefaultNumericPrecision)
+	}
+
 	return vm.memory[vm.previousOffset+index].(*Number)
 }
 
 func (vm *VirtualMachine) GetText(index int) *string {
+	if index == blackholeVariableIndex {
+		return NewText("")
+	}
+
 	return vm.memory[vm.previousOffset+index].(*string)
 }
 
 func (vm *VirtualMachine) GetArgType(index int) string {
 	switch vm.GetArg(index).(type) {
+	case nil:
+		return VariableTypeBlackhole
+
 	case *string:
 		return VariableTypeText
 

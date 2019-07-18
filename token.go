@@ -128,7 +128,10 @@ func isNumberCharacter(c byte) bool {
 
 func isWordCharacter(c byte) bool {
 	// TODO: This will not work with unicode characters.
-	return unicode.IsLetter(rune(c)) || unicode.IsDigit(rune(c)) || c == '-'
+	return unicode.IsLetter(rune(c)) ||
+		unicode.IsDigit(rune(c)) ||
+		c == '-' ||
+		c == '_'
 }
 
 func appendEndOfLine(tokens []Token) []Token {
