@@ -19,6 +19,7 @@ const (
 	TokenKindComma        = ","
 	TokenKindOperator     = "operator"
 	TokenKindEllipsis     = "..."
+	TokenKindQuestion     = "?"
 )
 
 type Token struct {
@@ -54,6 +55,9 @@ func Tokenize(r io.Reader) (tokens []Token, err error) {
 
 		case ':':
 			tokens = append(tokens, Token{TokenKindColon, ""})
+
+		case '?':
+			tokens = append(tokens, Token{TokenKindQuestion, ""})
 
 		case '=', '!', '>', '<':
 			var operator string

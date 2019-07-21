@@ -32,10 +32,12 @@ func (program *Program) AppendFunction(fn *Function) {
 type Function struct {
 	Definition *Sentence
 
-	// Variables inclues the arguments and locally declared variables.
+	// Variables includes the arguments and locally declared variables.
 	Variables []*VariableDefinition
 
 	Statements []Statement
+
+	IsQuestion bool
 }
 
 func (fn *Function) VariableMap() map[string]*VariableDefinition {
@@ -101,13 +103,32 @@ type Condition struct {
 }
 
 type If struct {
-	Unless      bool
-	Condition   *Condition
-	True, False *Sentence
+	// Unless is true if "unless" was used instead of "if". This inverts the
+	// logic.
+	Unless bool
+
+	// Either Condition or Question will be not-nil, never both.
+	Condition *Condition
+	Question  *Sentence
+
+	// The blocks containing the true and false branches.
+	True, False Statement
 }
 
 type While struct {
-	Until     bool
+	// Until is true if "until" was used instead of "while". This inverts the
+	// logic.
+	Until bool
+
+	// Either Condition or Question will be not-nil, never both.
 	Condition *Condition
-	True      *Sentence
+	Question  *Sentence
+
+	// The blocks containing the true and false branches. This is a sentence
+	// because it makes no sense to allow yes/no answers here.
+	True *Sentence
+}
+
+type QuestionAnswer struct {
+	Yes bool
 }

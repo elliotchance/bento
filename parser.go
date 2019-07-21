@@ -110,7 +110,7 @@ func (parser *Parser) consumeTokens(kinds []string) (tokens []Token) {
 	return
 }
 
-func (parser *Parser) consumeSpecificWord(expected string) (word string, err error) {
+func (parser *Parser) consumeSpecificWord(expected ...string) (word string, err error) {
 	originalOffset := parser.offset
 	defer func() {
 		if err != nil {
@@ -123,11 +123,13 @@ func (parser *Parser) consumeSpecificWord(expected string) (word string, err err
 		return "", err
 	}
 
-	if word != expected {
-		return "", fmt.Errorf(`expected "%s", but got "%s"`, expected, word)
+	for _, allowed := range expected {
+		if word == allowed {
+			return word, nil
+		}
 	}
 
-	return word, nil
+	return "", fmt.Errorf(`expected one of "%v", but got "%s"`, expected, word)
 }
 
 func (parser *Parser) consumeWord() (string, error) {
@@ -360,6 +362,45 @@ func (parser *Parser) consumeSentence(varMap map[string]*VariableDefinition) (se
 	return
 }
 
+func (parser *Parser) consumeQuestionAnswer() (answer *QuestionAnswer, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	word, err := parser.consumeSpecificWord("yes", "no")
+	if err != nil {
+		return nil, err
+	}
+
+	return &QuestionAnswer{
+		Yes: word == "yes",
+	}, nil
+}
+
+func (parser *Parser) consumeQuestionAnswerCall() (answer *QuestionAnswer, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	answer, err = parser.consumeQuestionAnswer()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = parser.consumeToken(TokenKindEndOfLine)
+	if err != nil {
+		return nil, err
+	}
+
+	return answer, nil
+}
+
 func (parser *Parser) consumeSentenceCall(varMap map[string]*VariableDefinition) (sentence *Sentence, err error) {
 	originalOffset := parser.offset
 	defer func() {
@@ -379,6 +420,38 @@ func (parser *Parser) consumeSentenceCall(varMap map[string]*VariableDefinition)
 	}
 
 	return
+}
+
+func (parser *Parser) consumeSentenceOrAnswer(varMap map[string]*VariableDefinition) (_ Statement, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	answer, err := parser.consumeQuestionAnswer()
+	if err == nil {
+		return answer, nil
+	}
+
+	return parser.consumeSentence(varMap)
+}
+
+func (parser *Parser) consumeSentenceCallOrAnswerCall(varMap map[string]*VariableDefinition) (_ Statement, err error) {
+	originalOffset := parser.offset
+	defer func() {
+		if err != nil {
+			parser.offset = originalOffset
+		}
+	}()
+
+	answer, err := parser.consumeQuestionAnswerCall()
+	if err == nil {
+		return answer, nil
+	}
+
+	return parser.consumeSentenceCall(varMap)
 }
 
 func (parser *Parser) consumeFunction() (function *Function, err error) {
@@ -417,11 +490,11 @@ func (parser *Parser) consumeFunction() (function *Function, err error) {
 			continue
 		}
 
-		// Normal sentence.
-		var sentence *Sentence
-		sentence, err = parser.consumeSentenceCall(function.VariableMap())
+		// TODO: yes/no cannot be used outside of questions
+		sentenceOrAnswer, err :=
+			parser.consumeSentenceCallOrAnswerCall(function.VariableMap())
 		if err == nil {
-			function.AppendStatement(sentence)
+			function.AppendStatement(sentenceOrAnswer)
 			continue
 		}
 
@@ -473,9 +546,14 @@ func (parser *Parser) consumeFunctionDeclaration() (function *Function, err erro
 		}
 	}
 
-	_, err = parser.consumeToken(TokenKindColon)
-	if err != nil {
-		return nil, err
+	_, err = parser.consumeToken(TokenKindQuestion)
+	if err == nil {
+		function.IsQuestion = true
+	} else {
+		_, err = parser.consumeToken(TokenKindColon)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	parser.consumeTokens([]string{TokenKindEndOfLine})
@@ -543,7 +621,12 @@ func (parser *Parser) consumeIf(varMap map[string]*VariableDefinition) (ifStmt *
 
 	ifStmt.Condition, err = parser.consumeCondition(varMap)
 	if err != nil {
-		return
+		// It must be a question instead of a condition.
+		ifStmt.Question, err = parser.consumeSentence(varMap)
+
+		if err != nil {
+			return
+		}
 	}
 
 	_, err = parser.consumeToken(TokenKindComma)
@@ -551,7 +634,7 @@ func (parser *Parser) consumeIf(varMap map[string]*VariableDefinition) (ifStmt *
 		return
 	}
 
-	ifStmt.True, err = parser.consumeSentence(varMap)
+	ifStmt.True, err = parser.consumeSentenceOrAnswer(varMap)
 	if err != nil {
 		return
 	}
@@ -572,7 +655,7 @@ func (parser *Parser) consumeIf(varMap map[string]*VariableDefinition) (ifStmt *
 		return
 	}
 
-	ifStmt.False, err = parser.consumeSentence(varMap)
+	ifStmt.False, err = parser.consumeSentenceOrAnswer(varMap)
 	if err != nil {
 		return
 	}
@@ -647,7 +730,12 @@ func (parser *Parser) consumeWhile(varMap map[string]*VariableDefinition) (while
 
 	whileStmt.Condition, err = parser.consumeCondition(varMap)
 	if err != nil {
-		return
+		// It must be a question instead of a condition.
+		whileStmt.Question, err = parser.consumeSentence(varMap)
+
+		if err != nil {
+			return
+		}
 	}
 
 	_, err = parser.consumeToken(TokenKindComma)
@@ -655,7 +743,12 @@ func (parser *Parser) consumeWhile(varMap map[string]*VariableDefinition) (while
 		return
 	}
 
-	whileStmt.True, err = parser.consumeSentenceCall(varMap)
+	whileStmt.True, err = parser.consumeSentence(varMap)
+	if err != nil {
+		return
+	}
+
+	_, err = parser.consumeToken(TokenKindEndOfLine)
 	if err != nil {
 		return
 	}

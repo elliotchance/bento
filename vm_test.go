@@ -443,6 +443,108 @@ var vmTests = map[string]struct {
 		},
 		expectedOutput: "",
 	},
+	"IfQuestionYes": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("good"),
+					},
+					Instructions: []Instruction{
+						&CallInstruction{
+							Call: "something is true",
+						},
+						&QuestionJumpInstruction{
+							True:  1,
+							False: 2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{0},
+						},
+					},
+				},
+				"something is true": {
+					Instructions: []Instruction{
+						&QuestionAnswerInstruction{
+							Yes: true,
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewText("good"), // start
+			// something is true (nothing)
+		},
+		expectedOutput: "good\n",
+	},
+	"IfQuestionNo": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("good"),
+					},
+					Instructions: []Instruction{
+						&CallInstruction{
+							Call: "something is true",
+						},
+						&QuestionJumpInstruction{
+							True:  1,
+							False: 2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{0},
+						},
+					},
+				},
+				"something is true": {
+					Instructions: []Instruction{
+						&QuestionAnswerInstruction{
+							Yes: false,
+						},
+					},
+				},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewText("good"), // start
+			// something is true (nothing)
+		},
+		expectedOutput: "",
+	},
+	"IfQuestionMissingAnswerIsNo": {
+		program: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Variables: []interface{}{
+						NewText("good"),
+					},
+					Instructions: []Instruction{
+						&CallInstruction{
+							Call: "something is true",
+						},
+						&QuestionJumpInstruction{
+							True:  1,
+							False: 2,
+						},
+						&CallInstruction{
+							Call: "display ?",
+							Args: []int{0},
+						},
+					},
+				},
+				"something is true": {},
+			},
+		},
+		expectedMemory: []interface{}{
+			NewText("good"), // start
+			// something is true (nothing)
+		},
+		expectedOutput: "",
+	},
 }
 
 var vmConditionTests = map[string]interface{}{

@@ -16,6 +16,10 @@ type ConditionJumpInstruction struct {
 	True, False int
 }
 
+type QuestionJumpInstruction struct {
+	True, False int
+}
+
 type JumpInstruction struct {
 	Forward int
 }
@@ -25,12 +29,16 @@ type CallInstruction struct {
 	Args []int
 }
 
+type QuestionAnswerInstruction struct {
+	Yes bool
+}
+
 type VirtualMachine struct {
-	program        *CompiledProgram
-	memory         []interface{}
-	memoryOffset   int
-	previousOffset int
-	out            io.Writer
+	program     *CompiledProgram
+	memory      []interface{}
+	stackOffset []int
+	out         io.Writer
+	answer      bool
 }
 
 func NewVirtualMachine(program *CompiledProgram) *VirtualMachine {
@@ -41,6 +49,8 @@ func NewVirtualMachine(program *CompiledProgram) *VirtualMachine {
 }
 
 func (vm *VirtualMachine) Run() error {
+	vm.stackOffset = []int{0}
+
 	// TODO: Check start exists.
 	return vm.call("start", nil)
 }
@@ -53,18 +63,28 @@ func (vm *VirtualMachine) call(syntax string, args []int) error {
 		return fmt.Errorf("no such function: %s", syntax)
 	}
 
-	// Expand the memory to accommodate the call.
-	vm.memory = append(vm.memory, fn.Variables...)
+	fn.InstructionOffset = 0
+
+	// Expand the memory to accommodate the variables (arguments and constants
+	// used in the function).
+	// TODO: Refactor this in a much more efficient way.
+	offset := vm.stackOffset[len(vm.stackOffset)-1]
+	for i, v := range fn.Variables {
+		for offset+i >= len(vm.memory) {
+			vm.memory = append(vm.memory, nil)
+		}
+		vm.memory[offset+i] = v
+	}
 
 	// Load in the arguments.
 	for i, arg := range args {
-		to := vm.memoryOffset + i
-		from := vm.previousOffset + arg
+		to := vm.stackOffset[len(vm.stackOffset)-1] + i
+		from := vm.stackOffset[len(vm.stackOffset)-2] + arg
 		vm.memory[to] = vm.memory[from]
 	}
 
-	vm.previousOffset = vm.memoryOffset
-	vm.memoryOffset += len(fn.Variables)
+	vm.stackOffset = append(vm.stackOffset,
+		vm.stackOffset[len(vm.stackOffset)-1]+len(fn.Variables))
 
 	for fn.InstructionOffset < len(fn.Instructions) {
 		instruction := fn.Instructions[fn.InstructionOffset]
@@ -83,6 +103,12 @@ func (vm *VirtualMachine) call(syntax string, args []int) error {
 		case *JumpInstruction:
 			move, err = vm.jumpInstruction(ins)
 
+		case *QuestionJumpInstruction:
+			move, err = vm.questionJumpInstruction(ins)
+
+		case *QuestionAnswerInstruction:
+			move, err = vm.questionAnswerInstruction(ins)
+
 		default:
 			panic(ins)
 		}
@@ -94,7 +120,15 @@ func (vm *VirtualMachine) call(syntax string, args []int) error {
 		fn.InstructionOffset += move
 	}
 
+	vm.stackOffset = vm.stackOffset[:len(vm.stackOffset)-1]
+
 	return nil
+}
+
+func (vm *VirtualMachine) questionAnswerInstruction(instruction *QuestionAnswerInstruction) (int, error) {
+	vm.answer = instruction.Yes
+
+	return 1, nil
 }
 
 func (vm *VirtualMachine) conditionJumpInstruction(instruction *ConditionJumpInstruction) (int, error) {
@@ -152,11 +186,22 @@ done:
 	return instruction.False, nil
 }
 
+func (vm *VirtualMachine) questionJumpInstruction(instruction *QuestionJumpInstruction) (int, error) {
+	if vm.answer {
+		return instruction.True, nil
+	}
+
+	return instruction.False, nil
+}
+
 func (vm *VirtualMachine) jumpInstruction(instruction *JumpInstruction) (int, error) {
 	return instruction.Forward, nil
 }
 
 func (vm *VirtualMachine) callInstruction(instruction *CallInstruction) (int, error) {
+	// We technically only need to do this when calling a question.
+	vm.answer = false
+
 	// Check if it is a system call?
 	if handler, ok := System[instruction.Call]; ok {
 		handler(vm, instruction.Args)
@@ -173,7 +218,11 @@ func (vm *VirtualMachine) GetArg(index int) interface{} {
 		return nil
 	}
 
-	return vm.memory[vm.previousOffset+index]
+	return vm.memory[vm.previousOffset()+index]
+}
+
+func (vm *VirtualMachine) previousOffset() int {
+	return vm.stackOffset[len(vm.stackOffset)-2]
 }
 
 func (vm *VirtualMachine) SetArg(index int, value interface{}) {
@@ -181,7 +230,7 @@ func (vm *VirtualMachine) SetArg(index int, value interface{}) {
 		return
 	}
 
-	vm.memory[vm.previousOffset+index] = value
+	vm.memory[vm.previousOffset()+index] = value
 }
 
 func (vm *VirtualMachine) GetNumber(index int) *Number {
@@ -189,7 +238,7 @@ func (vm *VirtualMachine) GetNumber(index int) *Number {
 		return NewNumber("0", DefaultNumericPrecision)
 	}
 
-	return vm.memory[vm.previousOffset+index].(*Number)
+	return vm.memory[vm.previousOffset()+index].(*Number)
 }
 
 func (vm *VirtualMachine) GetText(index int) *string {
@@ -197,7 +246,7 @@ func (vm *VirtualMachine) GetText(index int) *string {
 		return NewText("")
 	}
 
-	return vm.memory[vm.previousOffset+index].(*string)
+	return vm.memory[vm.previousOffset()+index].(*string)
 }
 
 func (vm *VirtualMachine) GetArgType(index int) string {

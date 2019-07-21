@@ -1,0 +1,22 @@
+start:
+	declare x is number
+
+    if foo bar, display "good 1"
+
+    unless foo bar, display "bad 2"
+
+	set x to 123
+    if x is over 100, display "good 3", otherwise display "bad 3"
+
+    subtract 50 from x into x
+    if x is over 100, display "bad 4", otherwise display "good 4"
+
+    if foo bar, display "good 5", otherwise display "bad 5"
+
+    unless foo bar, display "bad 6", otherwise display "good 6"
+
+foo bar?
+    yes
+
+the-number is over threshold (the-number is number, threshold is number)?
+	if the-number > threshold, yes
