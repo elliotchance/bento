@@ -13,7 +13,9 @@
          * [Text](#text)
          * [Number](#number)
             * [Mathematical Operations](#mathematical-operations)
-      * [Functions (Custom Sentences)](#functions-custom-sentences)
+      * [Functions](#functions)
+         * [Arguments](#arguments)
+         * [Questions](#questions)
       * [Controlling Flow](#controlling-flow)
          * [Conditions](#conditions)
          * [Decisions (if/unless)](#decisions-ifunless)
@@ -23,7 +25,7 @@
    * [Examples](#examples)
       * [Hello, World!](#hello-world)
       * [Variables](#variables-1)
-      * [Functions (Custom Sentences)](#functions-custom-sentences-1)
+      * [Functions (Custom Sentences)](#functions-custom-sentences)
 
 bento is a
 [forth-generation programming language](https://en.wikipedia.org/wiki/Fourth-generation_programming_language)
@@ -244,9 +246,9 @@ divide a and b into c       # c = a / b
 Note: Be careful with `subtract` as the operands are in the reverse order of the
 others.
 
-## Functions (Custom Sentences)
+## Functions
 
-Custom sentences can be defined by using the `:` character:
+Functions (custom sentences) can be defined by using the `:` character:
 
 ```
 print everything:
@@ -256,6 +258,8 @@ print everything:
 
 The whitespace is not required. However, it is easier to read when content of
 functions are indented with spaces or tabs.
+
+### Arguments
 
 Variables can be declared in the function name by specifying their names and
 types in `()`, for example:
@@ -273,6 +277,41 @@ say "Hi" to "Bob"
 ```
 
 The order in which the arguments are defined is not important.
+
+### Questions
+
+A question is a special type of function that is defined with a `?` instead of a
+`:`:
+
+```bento
+it is ok?
+	yes
+```
+
+A question is answered with the `yes` or `no` sentences. Once a question is
+answered it will return immediately.
+
+If a question is not explicitly answered by the end, it's assumed to be `no`.
+
+Questions can be asked in conditionals:
+
+```bento
+start:
+	if it is ok, display "All good!"
+```
+
+Questions can also take arguments in the same way that functions do:
+
+```bento
+start:
+	declare x is number
+
+	set x to 123
+    if x is over 100, display "It's over 100", otherwise display "Not yet"
+
+the-number is over threshold (the-number is number, threshold is number)?
+	if the-number > threshold, yes
+```
 
 ## Controlling Flow
 

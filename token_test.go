@@ -517,6 +517,18 @@ func TestTokenize(t *testing.T) {
 				{TokenKindEndOfFile, ""},
 			},
 		},
+		"QuestionDefinition": {
+			bento: "is good?\nyes",
+			expected: []Token{
+				{TokenKindWord, "is"},
+				{TokenKindWord, "good"},
+				{TokenKindQuestion, ""},
+				{TokenKindEndOfLine, ""},
+				{TokenKindWord, "yes"},
+				{TokenKindEndOfLine, ""},
+				{TokenKindEndOfFile, ""},
+			},
+		},
 	} {
 		t.Run(testName, func(t *testing.T) {
 			actual, err := Tokenize(strings.NewReader(test.bento))

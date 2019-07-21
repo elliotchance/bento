@@ -733,6 +733,210 @@ var compileTests = map[string]struct {
 			},
 		},
 	},
+	"QuestionDefinition1Yes": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"is good": {
+					Definition: &Sentence{Words: []interface{}{"is", "good"}},
+					Statements: []Statement{
+						&QuestionAnswer{
+							Yes: true,
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"is good": {
+					Instructions: []Instruction{
+						&QuestionAnswerInstruction{
+							Yes: true,
+						},
+					},
+				},
+			},
+		},
+	},
+	"QuestionDefinition1No": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"is good": {
+					Definition: &Sentence{Words: []interface{}{"is", "good"}},
+					Statements: []Statement{
+						&QuestionAnswer{
+							Yes: false,
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"is good": {
+					Instructions: []Instruction{
+						&QuestionAnswerInstruction{
+							Yes: false,
+						},
+					},
+				},
+			},
+		},
+	},
+	"QuestionDefinition2YesAndOtherWords": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"is good": {
+					Definition: &Sentence{Words: []interface{}{"is", "good"}},
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{
+								"yes", "then",
+							},
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"is good": {
+					Instructions: []Instruction{
+						&CallInstruction{
+							Call: "yes then",
+						},
+					},
+				},
+			},
+		},
+	},
+	"QuestionDefinitionWithVars": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"? is good": {
+					Definition: &Sentence{Words: []interface{}{
+						VariableReference("foo"), "is", "good"},
+					},
+					Variables: []*VariableDefinition{
+						{
+							Name: "foo",
+							Type: "text",
+						},
+					},
+					Statements: []Statement{
+						&QuestionAnswer{
+							Yes: true,
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"? is good": {
+					Variables: []interface{}{
+						NewText(""),
+					},
+					Instructions: []Instruction{
+						&QuestionAnswerInstruction{
+							Yes: true,
+						},
+					},
+				},
+			},
+		},
+	},
+	"AnswerInNormalFunction": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"? is good": {
+					Definition: &Sentence{Words: []interface{}{
+						VariableReference("foo"), "is", "good"},
+					},
+					Variables: []*VariableDefinition{
+						{
+							Name: "foo",
+							Type: "text",
+						},
+					},
+					Statements: []Statement{
+						&Sentence{
+							Words: []interface{}{"yes"},
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"? is good": {
+					Variables: []interface{}{
+						NewText(""),
+					},
+					Instructions: []Instruction{
+						&CallInstruction{
+							Call: "yes",
+						},
+					},
+				},
+			},
+		},
+	},
+	"IfQuestion": {
+		program: &Program{
+			Functions: map[string]*Function{
+				"start": {
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Statements: []Statement{
+						&If{
+							Question: &Sentence{
+								Words: []interface{}{"something", "is", "true"},
+							},
+							True: &Sentence{
+								Words: []interface{}{"all", "good"},
+							},
+						},
+					},
+				},
+				"something is true": {
+					IsQuestion: true,
+					Definition: &Sentence{
+						Words: []interface{}{"something", "is", "true"},
+					},
+					Statements: []Statement{
+						&QuestionAnswer{
+							Yes: true,
+						},
+					},
+				},
+			},
+		},
+		expected: &CompiledProgram{
+			Functions: map[string]*CompiledFunction{
+				"start": {
+					Instructions: []Instruction{
+						&CallInstruction{
+							Call: "something is true",
+						},
+						&QuestionJumpInstruction{
+							True:  1,
+							False: 2,
+						},
+						&CallInstruction{
+							Call: "all good",
+						},
+					},
+				},
+				"something is true": {
+					Instructions: []Instruction{
+						&QuestionAnswerInstruction{
+							Yes: true,
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 func TestCompileProgram(t *testing.T) {

@@ -59,23 +59,27 @@ func (compiler *Compiler) compileFunction() {
 	// All of other constants are appended into the end.
 	// TODO: Change this switch into an interface.
 	for _, statement := range compiler.function.Statements {
-		switch stmt := statement.(type) {
-		case *Sentence:
-			compiler.cf.Instructions = append(compiler.cf.Instructions,
-				compiler.compileSentence(stmt))
-
-		case *If:
-			compiler.cf.Instructions = append(compiler.cf.Instructions,
-				compiler.compileIf(stmt)...)
-
-		case *While:
-			compiler.cf.Instructions = append(compiler.cf.Instructions,
-				compiler.compileWhile(stmt)...)
-
-		default:
-			panic(stmt)
-		}
+		compiler.cf.Instructions = append(compiler.cf.Instructions,
+			compiler.compileStatement(statement)...)
 	}
+}
+
+func (compiler *Compiler) compileStatement(statement Statement) []Instruction {
+	switch stmt := statement.(type) {
+	case *Sentence:
+		return []Instruction{compiler.compileSentence(stmt)}
+
+	case *If:
+		return compiler.compileIf(stmt)
+
+	case *While:
+		return compiler.compileWhile(stmt)
+
+	case *QuestionAnswer:
+		return []Instruction{compiler.compileQuestionAnswer(stmt)}
+	}
+
+	return nil
 }
 
 func (compiler *Compiler) resolveArg(arg interface{}) int {
@@ -102,6 +106,12 @@ func (compiler *Compiler) resolveArg(arg interface{}) int {
 	return 0
 }
 
+func (compiler *Compiler) compileQuestionAnswer(answer *QuestionAnswer) Instruction {
+	return &QuestionAnswerInstruction{
+		Yes: answer.Yes,
+	}
+}
+
 func (compiler *Compiler) compileSentence(sentence *Sentence) Instruction {
 	instruction := &CallInstruction{
 		Call: sentence.Syntax(),
@@ -117,39 +127,62 @@ func (compiler *Compiler) compileSentence(sentence *Sentence) Instruction {
 	return instruction
 }
 
-func (compiler *Compiler) compileIf(ifStmt *If) []Instruction {
-	jumpInstruction := &ConditionJumpInstruction{
-		Operator: ifStmt.Condition.Operator,
-		True:     1,
-		False:    2,
+func (compiler *Compiler) compileIf(ifStmt *If) (instructions []Instruction) {
+	var jumpInstruction Instruction
+
+	if ifStmt.Condition != nil {
+		jumpInstruction = &ConditionJumpInstruction{
+			True:     1,
+			False:    2,
+			Operator: ifStmt.Condition.Operator,
+			Left:     compiler.resolveArg(ifStmt.Condition.Left),
+			Right:    compiler.resolveArg(ifStmt.Condition.Right),
+		}
+	} else {
+		jumpInstruction = &QuestionJumpInstruction{
+			True:  1,
+			False: 2,
+		}
 	}
 
 	if ifStmt.False != nil {
 		// This is to compensate for the added JumpInstruction that has to be
 		// added below.
-		jumpInstruction.False++
-	}
+		if j, ok := jumpInstruction.(*ConditionJumpInstruction); ok {
+			j.False++
+		}
 
-	jumpInstruction.Left = compiler.resolveArg(ifStmt.Condition.Left)
-	jumpInstruction.Right = compiler.resolveArg(ifStmt.Condition.Right)
+		if j, ok := jumpInstruction.(*QuestionJumpInstruction); ok {
+			j.False++
+		}
+	}
 
 	if ifStmt.Unless {
-		jumpInstruction.True, jumpInstruction.False =
-			jumpInstruction.False, jumpInstruction.True
+		if j, ok := jumpInstruction.(*ConditionJumpInstruction); ok {
+			j.True, j.False = j.False, j.True
+		}
+
+		if j, ok := jumpInstruction.(*QuestionJumpInstruction); ok {
+			j.True, j.False = j.False, j.True
+		}
 	}
 
-	instructions := []Instruction{
-		jumpInstruction,
-		compiler.compileSentence(ifStmt.True),
+	// If it's a question we need to ask it before we can use the answer.
+	if ifStmt.Question != nil {
+		instructions = append(instructions,
+			compiler.compileSentence(ifStmt.Question))
 	}
+
+	instructions = append(instructions, jumpInstruction)
+	instructions = append(instructions,
+		compiler.compileStatement(ifStmt.True)...)
 
 	if ifStmt.False != nil {
-		instructions = append(instructions,
-			// This prevents the True case above from also running the else
-			// clause.
-			&JumpInstruction{Forward: 2},
+		// This prevents the True case above from also running the else clause.
+		instructions = append(instructions, &JumpInstruction{Forward: 2})
 
-			compiler.compileSentence(ifStmt.False))
+		instructions = append(instructions,
+			compiler.compileStatement(ifStmt.False)...)
 	}
 
 	return instructions

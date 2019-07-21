@@ -74,3 +74,7 @@ func (number *Number) Quo(a, b *Number) {
 func (number *Number) Set(x *Number) {
 	number.Rat.SetString(x.Rat.FloatString(number.Precision))
 }
+
+func (number *Number) Bool() bool {
+	return number.Rat.Sign() != 0
+}
