@@ -7,6 +7,7 @@
    * [Language](#language)
       * [File Structure](#file-structure)
       * [Sentences](#sentences)
+         * [Wrapping Long Sentences](#wrapping-long-sentences)
       * [Comments](#comments)
       * [Variables](#variables)
          * [Blackhole](#blackhole)
@@ -125,10 +126,11 @@ new line. For example:
 display "Hello"
 ```
 
-Long sentences can be broken up into multiple lines using `...` at the end of
-each line, excluding the last line:
+### Wrapping Long Sentences
 
-```
+You can explicitly use `...` at the end of the line to indicate a continuation:
+
+```bento
 this is a really long...
 	sentence that should go...
 	over multiple lines
@@ -136,6 +138,15 @@ this is a really long...
 
 Indentation between lines does not make an difference. However, it is easier to
 read when following lines are indented.
+
+Sentences can also contains new lines if the line ends with a `,`. This is
+useful for long inline statements:
+
+```bento
+if my-name != "John",
+  display "oops!",
+  otherwise display "All good."
+```
 
 ## Comments
 
