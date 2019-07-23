@@ -835,6 +835,55 @@ var parserTests = map[string]struct {
 			},
 		},
 	},
+	"MultilineIf": {
+		bento: "start:\nif something,\n  next line\ndisplay hi",
+		expected: &Program{
+			Functions: map[string]*Function{
+				"start": {
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Statements: []Statement{
+						&If{
+							Question: &Sentence{
+								Words: []interface{}{"something"},
+							},
+							True: &Sentence{
+								Words: []interface{}{"next", "line"},
+							},
+						},
+						&Sentence{
+							Words: []interface{}{"display", "hi"},
+						},
+					},
+				},
+			},
+		},
+	},
+	"MultilineIf2": {
+		bento: "start:\nif something,\n  next line,\n  otherwise foo\ndisplay hi",
+		expected: &Program{
+			Functions: map[string]*Function{
+				"start": {
+					Definition: &Sentence{Words: []interface{}{"start"}},
+					Statements: []Statement{
+						&If{
+							Question: &Sentence{
+								Words: []interface{}{"something"},
+							},
+							True: &Sentence{
+								Words: []interface{}{"next", "line"},
+							},
+							False: &Sentence{
+								Words: []interface{}{"foo"},
+							},
+						},
+						&Sentence{
+							Words: []interface{}{"display", "hi"},
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 func TestParser_Parse(t *testing.T) {

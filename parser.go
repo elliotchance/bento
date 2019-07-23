@@ -331,7 +331,7 @@ func (parser *Parser) consumeVariableIsTypeList() (list map[string]*VariableDefi
 
 		list[definition.Name] = definition
 
-		_, err = parser.consumeToken(TokenKindComma)
+		err = parser.consumeComma()
 		if err != nil {
 			break
 		}
@@ -629,7 +629,7 @@ func (parser *Parser) consumeIf(varMap map[string]*VariableDefinition) (ifStmt *
 		}
 	}
 
-	_, err = parser.consumeToken(TokenKindComma)
+	err = parser.consumeComma()
 	if err != nil {
 		return
 	}
@@ -645,7 +645,7 @@ func (parser *Parser) consumeIf(varMap map[string]*VariableDefinition) (ifStmt *
 		return
 	}
 
-	_, err = parser.consumeToken(TokenKindComma)
+	err = parser.consumeComma()
 	if err != nil {
 		return
 	}
@@ -705,6 +705,18 @@ func (parser *Parser) consumeOperator() (string, error) {
 	return operatorToken.Value, nil
 }
 
+func (parser *Parser) consumeComma() error {
+	_, err := parser.consumeToken(TokenKindComma)
+	if err != nil {
+		return err
+	}
+
+	// Ignore the error as the new line is optional.
+	_, _ = parser.consumeToken(TokenKindEndOfLine)
+
+	return nil
+}
+
 func (parser *Parser) consumeWhile(varMap map[string]*VariableDefinition) (whileStmt *While, err error) {
 	originalOffset := parser.offset
 	defer func() {
@@ -738,7 +750,7 @@ func (parser *Parser) consumeWhile(varMap map[string]*VariableDefinition) (while
 		}
 	}
 
-	_, err = parser.consumeToken(TokenKindComma)
+	err = parser.consumeComma()
 	if err != nil {
 		return
 	}
