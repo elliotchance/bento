@@ -1,0 +1,11 @@
+start:
+	declare scores is example-scores-php
+	declare avg is number
+
+	add 53.5 to scores
+	add 17 to scores
+
+	average of scores into avg
+
+	display avg
+	display scores

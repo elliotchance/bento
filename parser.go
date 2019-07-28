@@ -265,14 +265,14 @@ func (parser *Parser) consumeType() (ty string, precision int, err error) {
 	}
 
 consumeType:
-	ty, err = parser.consumeSpecificWord(VariableTypeText)
-	if err == nil {
-		return ty, 0, nil
-	}
-
 	precision, err = parser.consumeNumberType()
 	if err == nil {
 		return "number", precision, err
+	}
+
+	ty, err = parser.consumeWord()
+	if err == nil {
+		return ty, 0, nil
 	}
 
 	return "", 0, fmt.Errorf("expected variable type, but got %s", ty)
