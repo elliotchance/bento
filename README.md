@@ -22,8 +22,16 @@
          * [Decisions (if/unless)](#decisions-ifunless)
          * [Loops (while/until)](#loops-whileuntil)
    * [Backends](#backends)
+      * [Locating and Starting Backends](#locating-and-starting-backends)
+      * [Communication Protocol](#communication-protocol)
+         * [Request](#request)
+         * [Response](#response)
+         * [Special Cases](#special-cases)
+            * [sentences](#sentences-1)
+      * [Examples](#examples)
+         * [PHP](#php)
       * [System](#system)
-   * [Examples](#examples)
+   * [Examples](#examples-1)
       * [Hello, World!](#hello-world)
       * [Variables](#variables-1)
       * [Functions (Custom Sentences)](#functions-custom-sentences)
@@ -390,7 +398,158 @@ while/until <condition>, <true>, otherwise <false>
 
 # Backends
 
-A backend performs the tasks described in the bento program.
+A backend is program controlled by bento. A backend can be any program (compiled
+or interpreted) that implements the bento protocol on the port specified on the
+`BENTO_PORT` environment variable.
+
+## Locating and Starting Backends
+
+A backend is started (that is the program is started) when a variable is
+declared with a type that represents the backend. For example:
+
+```bento
+declare my-var is my-backend
+```
+
+Will find and start the backend with the name `my-backend`. The process is:
+
+1. `$BENTO_BACKEND` works similar to `$PATH` where it may contain zero or more
+paths split by a `:`. If `$BENTO_BACKEND` is not defined or is empty then it
+will receive a default value of `.` - the current directory.
+
+2. For each of the backend paths, in order, it will attempt to find a directory
+called `my-backend`. The first one that it finds will be the one used, even if
+another directory of the same name exists in other backend paths.
+
+3. The `my-backend` directory must contain a file called `bento.json`. This
+describes the backend, and also how it is to be executed. A minimal `bento.json`
+looks like:
+
+```json
+{
+  "run": "php myscript.php"
+}
+```
+
+The `run` contains the system command that will be executed. The program is
+expected to open a socket, listening on the `BENTO_PORT` environment variable.
+
+The program must remain running until the socket is closed by bento. All
+communication is defined in the *Backend Protocol*.
+
+## Communication Protocol
+
+All communication between bento and the backend is done through a socket. The
+port will be provided to the backend with the `BENTO_PORT` environment variable.
+
+Bento will always start the communication with a request and wait for a
+response. This synchronous process will continue indefinitely until bento closes
+the connection. You may perform final cleanup if need be, then exit the backend
+program.
+
+A request or response will be a JSON object that consists of a single line, then
+terminated by a single new line (`\n`). The newline is important because it
+signals to the other side that the end of the message has been reached. It's
+also important to make sure JSON objects are encoded correctly so that any new
+line characters have been escaped.
+
+### Request
+
+A request object is sent from bento to the backend and looks like:
+
+```json
+{
+  "sentence": "add ? to ?",
+  "args": ["57", "example-scores-php"]
+}
+```
+
+`sentence` is always a non-empty string. `?` is used as placeholders for the
+respective order of elements in `args`. `args` will always be an array that will
+contain the same number elements as their are placeholders.
+
+Each of the `args` will be a string (regardless of the internal type in bento).
+
+### Response
+
+Bento will wait for a response after sending a request before proceeding. Like
+the request, the response must be a valid JSON object encoded in a single line,
+follow by a new line character to signal termination.
+
+A response can contain the following keys:
+
+```json
+{
+  "text": "something",
+  "set": {
+  	"$0": "foo"
+  },
+  "error": "Oh-noes!"
+}
+```
+
+- `text` - The text representation of the variable. This is what is output with
+`display ?`. You do not need to return a value in other cases. You must
+implement the `display ?` sentence in your backend for this feature.
+
+- `set` - This will set the value of a variable based on it's index in the
+sentence (`$n` where `n` is an index). The first placeholder (`?`) will have an
+index of `0`. The value must be a string and a valid valid for the destination
+type.
+
+- `error` must exist and be a string when an error has occurred. It also must
+not be empty. The `error` should contain a description of the problem in a
+human-readable manner. It should not contain sensitive information such as
+passwords, or details such as stack traces used for debugging.
+
+### Special Cases
+
+#### sentences
+
+All backends must implement `sentences`, which is used to fetch all of the
+allowed sentences:
+
+```json
+{
+  "special": "sentences"
+}
+```
+
+The response must be in the form:
+
+```json
+{
+  "sentences": ["increase ? by ?", "display ?"]
+}
+```
+
+The `sentences` is allowed to have zero elements.
+
+The special `sentences` request is sent once, immediately after the socket
+connection to the backend is successful. However, you should allow this request
+to come at any time and return the same result in all cases.
+
+## Examples
+
+Each of the examples implement the backend for the following:
+
+```bento
+start:
+	declare total is my-backend
+	increase total by 57
+	increase total by 13
+	display total
+```
+
+The result of running the program in all cases is:
+
+```
+The total is 70.
+```
+
+### PHP
+
+- [backend/example-scores-php](https://github.com/elliotchance/bento/tree/master/backend/example-scores-php).
 
 ## System
 

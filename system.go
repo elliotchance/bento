@@ -33,6 +33,17 @@ func display(vm *VirtualMachine, args []int) {
 	case nil: // blackhole
 		_, _ = fmt.Fprint(vm.out, "\n")
 
+	case *Backend:
+		response, err := value.send(&BackendRequest{
+			Sentence: "display ?",
+			Args:     []string{fmt.Sprintf("%v", value)},
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		_, _ = fmt.Fprintf(vm.out, "%v\n", response.Text)
+
 	default:
 		panic(value)
 	}

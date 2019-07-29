@@ -51,6 +51,9 @@ func (compiler *Compiler) compileFunction() {
 
 		case VariableTypeNumber:
 			value = NewNumber("0", variable.Precision)
+
+		default:
+			value = NewBackend(variable.Type)
 		}
 
 		compiler.cf.Variables = append(compiler.cf.Variables, value)

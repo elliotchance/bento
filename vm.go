@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -39,6 +40,7 @@ type VirtualMachine struct {
 	stackOffset []int
 	out         io.Writer
 	answer      bool
+	backends    []*Backend
 }
 
 func NewVirtualMachine(program *CompiledProgram) *VirtualMachine {
@@ -58,9 +60,50 @@ func (vm *VirtualMachine) Run() error {
 func (vm *VirtualMachine) call(syntax string, args []int) error {
 	fn := vm.program.Functions[syntax]
 
-	// TODO: This should be picked up in compile time.
 	if fn == nil {
+		// Maybe it belongs to a backend?
+		for _, arg := range args {
+			// TODO: It is ambiguous if a sentence contains more than one
+			//  backend.
+			if backend, ok := vm.GetArg(arg).(*Backend); ok {
+				// TODO: Make sure syntax exists
+				var realArgs []string
+				for _, realArg := range args {
+					realArgs = append(realArgs, fmt.Sprintf("%v", vm.GetArg(realArg)))
+				}
+				result, err := backend.send(&BackendRequest{
+					Sentence: syntax,
+					Args:     realArgs,
+				})
+				if err != nil {
+					panic(err)
+				}
+
+				for key, value := range result.Set {
+					index, err := strconv.Atoi(key[1:])
+					if err != nil {
+						panic(err)
+					}
+
+					vm.SetArg(index, NewText(value))
+				}
+
+				return nil
+			}
+		}
+
 		return fmt.Errorf("no such function: %s", syntax)
+	}
+
+	// Start backends.
+	// TODO: Backends are not closed.
+	for _, variable := range fn.Variables {
+		if backend, ok := variable.(*Backend); ok {
+			err := backend.Start()
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	fn.InstructionOffset = 0
