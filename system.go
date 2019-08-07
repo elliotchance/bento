@@ -9,7 +9,22 @@ import (
 
 // System defines all of the inbuilt functions.
 var System = map[string]func(vm *VirtualMachine, args []int){
-	"display ?":                                             display,
+	// This is a really dodgy hack until we can properly support varargs. Each
+	// of the arguments will be printed with no space between them and a single
+	// newline will be written after any (including zero) arguments.
+	"display":                       display,
+	"display ?":                     display,
+	"display ? ?":                   display,
+	"display ? ? ?":                 display,
+	"display ? ? ? ?":               display,
+	"display ? ? ? ? ?":             display,
+	"display ? ? ? ? ? ?":           display,
+	"display ? ? ? ? ? ? ?":         display,
+	"display ? ? ? ? ? ? ? ? ?":     display,
+	"display ? ? ? ? ? ? ? ? ? ?":   display,
+	"display ? ? ? ? ? ? ? ? ? ? ?": display,
+
+	// The other built-in functions.
 	"set ? to ?":                                            setVariable,
 	"add ? and ? into ?":                                    add,
 	"subtract ? from ? into ?":                              subtract,
@@ -22,31 +37,34 @@ var System = map[string]func(vm *VirtualMachine, args []int){
 }
 
 func display(vm *VirtualMachine, args []int) {
-	// TODO: Convert this switch into an interface.
-	switch value := vm.GetArg(args[0]).(type) {
-	case *string: // text
-		_, _ = fmt.Fprintf(vm.out, "%v\n", *value)
+	for _, arg := range args {
+		// TODO: Convert this switch into an interface.
+		switch value := vm.GetArg(arg).(type) {
+		case *string: // text
+			_, _ = fmt.Fprintf(vm.out, "%v", *value)
 
-	case *Number:
-		_, _ = fmt.Fprintf(vm.out, "%v\n", value.String())
+		case *Number:
+			_, _ = fmt.Fprintf(vm.out, "%v", value.String())
 
-	case nil: // blackhole
-		_, _ = fmt.Fprint(vm.out, "\n")
+		case nil: // blackhole
 
-	case *Backend:
-		response, err := value.send(&BackendRequest{
-			Sentence: "display ?",
-			Args:     []string{fmt.Sprintf("%v", value)},
-		})
-		if err != nil {
-			panic(err)
+		case *Backend:
+			response, err := value.send(&BackendRequest{
+				Sentence: "display ?",
+				Args:     []string{fmt.Sprintf("%v", value)},
+			})
+			if err != nil {
+				panic(err)
+			}
+
+			_, _ = fmt.Fprintf(vm.out, "%v", response.Text)
+
+		default:
+			panic(value)
 		}
-
-		_, _ = fmt.Fprintf(vm.out, "%v\n", response.Text)
-
-	default:
-		panic(value)
 	}
+
+	_, _ = fmt.Fprint(vm.out, "\n")
 }
 
 func setVariable(vm *VirtualMachine, args []int) {

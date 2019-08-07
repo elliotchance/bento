@@ -1,0 +1,13 @@
+Start:
+  Say hello to "Jane"
+  Say hello to "David"
+
+Say hello to persons-name (persons-name is text):
+  If it is the afternoon,
+    display "Good afternoon, " persons-name "!",
+    otherwise display "Good morning, " persons-name "!"
+
+It is the afternoon?
+  Declare am-or-pm is text
+  Run system command "printf `date +'%p'`" output into am-or-pm
+  If am-or-pm = "PM", yes
